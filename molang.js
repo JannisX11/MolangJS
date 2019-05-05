@@ -50,7 +50,7 @@ var Molang = {
 		//ternary
 		var split = Molang._splitString(s, '?');
 		if (split) {
-			let condition = iterate(split[0]);
+			let condition = Molang._itS(split[0]);
 			let ab = Molang._splitString(split[1], ':');
 			if (ab.length) {
 				return new Molang.Comp(10, condition, ab[0], ab[1]);
@@ -191,7 +191,12 @@ var Molang = {
 			return T
 		} else if (typeof T === 'string') {
 			var val = Molang._current_variables[T]
-			if (val === undefined) val = Molang.global_variables[T];
+			if (val === undefined) {
+				val = Molang.global_variables[T];
+			}
+			if (typeof val === 'string') {
+				val = Molang.parse(val, Molang._current_variables)
+			}
 			return val||0;
 		} else if (T instanceof Molang.Comp) {
 			var M = Molang;
