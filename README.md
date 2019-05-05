@@ -7,14 +7,12 @@ To calculate the result of a MoLang expression, use Molang.parse()
 
 `Molang.parse(expression, variables)`
 
-[string] **expression:** MoLang expression.
-
-[object] **variables:** (Optional) Object of variables to pass to the parser. Each variable can be a number or another expression.
+* [string] **expression:** MoLang expression.
+* [object] **variables:** (Optional) Object of variables to pass to the parser. Each variable can be a number or another expression.
 
 ### Options
-[object] **Molang.global_variables:** Object of global variables. If no matching variable is passed along, these variables will be used.
-
-[boolean] **Molang.cache_enabled:** Whether to use caching to make the processing of expressions faster. Default: true.
+* [object] **Molang.global_variables:** Object of global variables. If no matching variable is passed along, these variables will be used.
+* [boolean] **Molang.cache_enabled:** Whether to use caching to make the processing of expressions faster. Default: true.
 
 ## Example
 ```
