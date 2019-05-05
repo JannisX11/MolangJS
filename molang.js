@@ -83,6 +83,14 @@ var Molang = {
 			let operator = s.substr(5, begin-5);
 			let inner = s.substr(begin+1, s.length-begin-2)
 			let params = Molang._splitString(inner, ',')||[inner];
+			if (params.length > 1) {
+				var last2 = Molang._splitString(params[1], ',')
+				if (last2 && last2.length > 1) {
+					params[1] = last2[0];
+					params[2] = last2[1];
+				}
+			}
+			cl(params)
 
 			switch (operator) {
 				case 'abs':
@@ -122,7 +130,7 @@ var Molang = {
 					return new M.Comp(31, params[0]);
 					break;
 				case 'mod':
-					return new M.Comp(32, params[0]);
+					return new M.Comp(32, params[0], params[1]);
 					break;
 				case 'min':
 					return new M.Comp(33, params[0], params[1]);
@@ -280,7 +288,7 @@ var Molang = {
 					return Math.floor(M._itEx(T.a));
 					break;
 				case 32:
-					return Math.mod(M._itEx(T.a), M._itEx(T.b));
+					return M._itEx(T.a) % M._itEx(T.b);
 					break;
 				case 33:
 					return Math.min(M._itEx(T.a), M._itEx(T.b));
