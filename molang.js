@@ -90,7 +90,6 @@ var Molang = {
 					params[2] = last2[1];
 				}
 			}
-			cl(params)
 
 			switch (operator) {
 				case 'abs':
