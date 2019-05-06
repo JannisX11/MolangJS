@@ -62,11 +62,11 @@ var Molang = {
 			M._testOp(s, '&&', 11) ||
 			M._testOp(s, '||', 12) ||
 			M._testOp(s, '<', 13) ||
-			M._testOp(s, '<==', 14) ||
+			M._testOp(s, '<=', 14) ||
 			M._testOp(s, '>', 15) ||
-			M._testOp(s, '>==', 16) ||
-			M._testOp(s, '===', 17) ||
-			M._testOp(s, '!==', 18) ||
+			M._testOp(s, '>=', 16) ||
+			M._testOp(s, '==', 17) ||
+			M._testOp(s, '!=', 18) ||
 
 			M._testOp(s, '+', 1, true) ||
 			M._testOp(s, '-', 2, true) ||
