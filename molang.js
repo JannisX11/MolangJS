@@ -44,8 +44,9 @@ var Molang = {
 		if (!isNaN(s)) return parseFloat(s);
 
 		s = s.replace(/\s/g, '')
-		if (s.substr(0, 1) === '(' && s.substr(-1) === ')') {
-			s = s.substr(1, s.length-2)
+
+		while (M._canTrimParentheses(s)) {
+			s = s.substr(1, s.length-2);
 		}
 
 		//ternary
@@ -154,6 +155,19 @@ var Molang = {
 		}
 		return 0;
 	},
+	_canTrimParentheses: function(s) {
+		if (s.substr(0, 1) === '(' && s.substr(-1) === ')') {
+			let level = 0;
+			for (var i = 0; i < s.length-1; i++) {
+				switch (s[i]) {
+					case '(': level++; break;
+					case ')': level--; break;
+				}
+				if (level == 0) return false;
+			}
+			return true;
+		}
+	},
 	_testOp: function(s, char, operator, inverse) {
 
 		var split = Molang._splitString(s, char, inverse)
@@ -254,10 +268,10 @@ var Molang = {
 					return Math.abs(M._itEx(T.a));
 					break;
 				case 21:
-					return Math.sin(M._itEx(T.a));
+					return Math.sin(M._itEx(T.a) * Math.PI/180);
 					break;
 				case 22:
-					return Math.cos(M._itEx(T.a));
+					return Math.cos(M._itEx(T.a) * Math.PI/180);
 					break;
 				case 23:
 					return Math.exp(M._itEx(T.a));
