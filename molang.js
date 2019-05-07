@@ -6,6 +6,7 @@ var Molang = {
 		}
 		if (typeof input !== 'string') return 0;
 		input = input.toLowerCase();
+		if (input.substr(-1) === ';') input = input.substr(0, input.length-1)
 
 		if (Molang.cache_enabled && Molang._cached[input]) {
 			var expression = Molang._cached[input];
@@ -50,10 +51,9 @@ var Molang = {
 		//ternary
 		var split = Molang._splitString(s, '?');
 		if (split) {
-			let condition = Molang._itS(split[0]);
 			let ab = Molang._splitString(split[1], ':');
 			if (ab.length) {
-				return new Molang.Comp(10, condition, ab[0], ab[1]);
+				return new Molang.Comp(10, split[0], ab[0], ab[1]);
 			}
 		}
 
