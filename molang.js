@@ -21,6 +21,7 @@ var Molang = {
 	},
 	global_variables: {},
 	cache_enabled: true,
+	use_radians: false,
 	expression: function(string) {
 		this.original_input = string;
 		this.data = Molang._itS(string);
@@ -207,6 +208,9 @@ var Molang = {
 			i += direction;
 		}
 	},
+	get _angleFactor() {
+		return this.use_radians ? 1 : (Math.PI/180);
+	},
 	_itEx: function(T) {
 		if (typeof T === 'number') {
 			return T
@@ -268,10 +272,10 @@ var Molang = {
 					return Math.abs(M._itEx(T.a));
 					break;
 				case 21:
-					return Math.sin(M._itEx(T.a) * Math.PI/180);
+					return Math.sin(M._itEx(T.a) * Molang._angleFactor);
 					break;
 				case 22:
-					return Math.cos(M._itEx(T.a) * Math.PI/180);
+					return Math.cos(M._itEx(T.a) * Molang._angleFactor);
 					break;
 				case 23:
 					return Math.exp(M._itEx(T.a));
