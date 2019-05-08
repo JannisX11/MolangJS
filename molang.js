@@ -54,7 +54,7 @@ var Molang = {
 		var split = Molang._splitString(s, '?');
 		if (split) {
 			let ab = Molang._splitString(split[1], ':');
-			if (ab.length) {
+			if (ab && ab.length) {
 				return new Molang.Comp(10, split[0], ab[0], ab[1]);
 			}
 		}
@@ -71,7 +71,7 @@ var Molang = {
 			M._testOp(s, '!=', 18) ||
 
 			M._testOp(s, '+', 1, true) ||
-			M._testOp(s, '-', 2, true) ||
+			M._testMinus(s, '-', 2, true) ||
 			M._testOp(s, '*', 3) ||
 			M._testOp(s, '/', 4)
 		)
@@ -176,6 +176,17 @@ var Molang = {
 			return new Molang.Comp(operator, split[0], split[1])
 		}
 	},
+	_testMinus: function(s, char, operator, inverse) {
+
+		var split = Molang._splitString(s, char, inverse)
+		if (split) {
+			if (split[0].length === 0) {
+				return new Molang.Comp(operator, 0, split[1])
+			} else if ('+*/<>=|&?:'.includes(split[0].substr(-1)) === false) {
+				return new Molang.Comp(operator, split[0], split[1])
+			}
+		}
+	},
 	_splitString: function(s, char, inverse) {
 		var direction = inverse ? -1 : 1;
 		var i = inverse ? s.length-1 : 0;
@@ -218,6 +229,9 @@ var Molang = {
 			var val = Molang._current_variables[T]
 			if (val === undefined) {
 				val = Molang.global_variables[T];
+			}
+			if (val === undefined && typeof Molang.variableHandler === 'function') {
+				val = Molang.variableHandler(T)
 			}
 			if (typeof val === 'string') {
 				val = Molang.parse(val, Molang._current_variables)
