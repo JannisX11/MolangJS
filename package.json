@@ -1,0 +1,25 @@
+{
+  "name": "molangjs",
+  "version": "1.0.0",
+  "description": "MoLang Parser for Javascript",
+  "main": "molang.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JannisX11/MolangJS.git"
+  },
+  "keywords": [
+    "molang",
+    "minecraft",
+    "snowstorm",
+    "blockbench"
+  ],
+  "author": "JannisX11",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JannisX11/MolangJS/issues"
+  },
+  "homepage": "https://github.com/JannisX11/MolangJS#readme"
+}
