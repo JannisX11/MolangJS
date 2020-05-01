@@ -1,4 +1,4 @@
-var Molang = {
+const Molang = {
 	parse: function (input, variables) {
 
 		if (typeof input === 'number') {
@@ -367,3 +367,5 @@ Molang._clamp = function(number, min, max) {
 	if (number < min || isNaN(number)) number = min;
 	return number;
 }
+
+module.exports = Molang
