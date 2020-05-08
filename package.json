@@ -1,10 +1,10 @@
 {
   "name": "molangjs",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "MoLang Parser for Javascript",
   "main": "molang.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node ./tests.js"
   },
   "repository": {
     "type": "git",
@@ -21,5 +21,8 @@
   "bugs": {
     "url": "https://github.com/JannisX11/MolangJS/issues"
   },
-  "homepage": "https://github.com/JannisX11/MolangJS#readme"
+  "homepage": "https://github.com/JannisX11/MolangJS#readme",
+  "devDependencies": {
+    "chalk": "^4.0.0"
+  }
 }
