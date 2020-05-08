@@ -1,6 +1,8 @@
 # MolangJS
 MoLang parser for Javascript.
 
+[![npm version](https://img.shields.io/npm/v/molangjs)](https://www.npmjs.com/package/molangjs)
+
 ## Usage
 ### Parser
 To calculate the result of a MoLang expression, use Molang.parse()
