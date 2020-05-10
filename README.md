@@ -1,7 +1,8 @@
-# MolangJS
-MoLang parser for Javascript.
+# MolangJS [![npm version](https://img.shields.io/npm/v/molangjs)](https://www.npmjs.com/package/molangjs)
 
-[![npm version](https://img.shields.io/npm/v/molangjs)](https://www.npmjs.com/package/molangjs)
+MoLang parser for Javascript
+
+---
 
 ## Usage
 ### Parser

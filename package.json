@@ -1,6 +1,6 @@
 {
   "name": "molangjs",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "MoLang Parser for Javascript",
   "main": "molang.js",
   "scripts": {

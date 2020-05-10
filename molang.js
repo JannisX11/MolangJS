@@ -270,7 +270,7 @@ const Molang = {};
 				}
 			}
 			if (val === undefined && typeof Molang.variableHandler === 'function') {
-				val = Molang.variableHandler(T)
+				val = Molang.variableHandler(T, current_variables)
 			}
 			if (typeof val === 'string') {
 				val = Molang.parse(val, current_variables)
