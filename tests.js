@@ -1,6 +1,7 @@
 const Molang = require('.');
 const chalk = require('chalk');
 
+
 function test(name, expression, variables, expected_result) {
     let result = Molang.parse(expression, variables || undefined);
     if (result == expected_result) {
@@ -24,17 +25,19 @@ test ('Math', 'Math.pow(Math.clamp(500, 0, 3), 2)', null, 9)
 
 test ('Variables', 'variable.a + variable.b', {'variable.a': 2, 'variable.b': 'Math.sqrt(9)'}, 5)
 
+test ('Lerprotate', 'Math.lerprotate(10, 380, 0.5) + Math.lerprotate(50, -10, 0.25)', null, 20)
+
 
 Molang.cache_enabled = false;
-console.time('Raw Performance');
+console.time(chalk.cyanBright('Raw Performance'));
 for (var i = 0; i < 100000; i++) {
-    Molang.parse('false ? 5 : 10')
+    Molang.parse('false ? 5 : (10 * math.pow(2+2, 2))')
 }
-console.timeEnd('Raw Performance')
+console.timeEnd(chalk.cyanBright('Raw Performance'))
 
 Molang.cache_enabled = true;
-console.time('Cached Performance');
+console.time(chalk.cyanBright('Cached Performance'));
 for (var i = 0; i < 100000; i++) {
-    Molang.parse('false ? 5 : 10')
+    Molang.parse('false ? 5 : (10 * math.pow(2+2, 2))')
 }
-console.timeEnd('Cached Performance')
+console.timeEnd(chalk.cyanBright('Cached Performance'))
