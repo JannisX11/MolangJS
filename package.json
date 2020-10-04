@@ -1,10 +1,11 @@
 {
   "name": "molangjs",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "MoLang Parser for Javascript",
-  "main": "molang.js",
+  "main": "dist/molang.cjs.js",
   "scripts": {
-    "test": "node ./tests.js"
+    "test": "node ./tests.js",
+    "build": "rollup -c"
   },
   "repository": {
     "type": "git",
@@ -23,6 +24,8 @@
   },
   "homepage": "https://github.com/JannisX11/MolangJS#readme",
   "devDependencies": {
-    "chalk": "^4.0.0"
+    "chalk": "^4.0.0",
+    "rollup": "^2.28.2",
+    "rollup-plugin-node-resolve": "^5.2.0"
   }
 }

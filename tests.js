@@ -1,9 +1,10 @@
 const Molang = require('.');
 const chalk = require('chalk');
 
+const MolangParser = new Molang();
 
 function test(name, expression, variables, expected_result) {
-    let result = Molang.parse(expression, variables || undefined);
+    let result = MolangParser.parse(expression, variables || undefined);
     if (result == expected_result) {
         console.log(chalk.green(`Test '${name}' successful!`))
     } else {
@@ -28,16 +29,16 @@ test ('Variables', 'variable.a + variable.b', {'variable.a': 2, 'variable.b': 'M
 test ('Lerprotate', 'Math.lerprotate(10, 380, 0.5) + Math.lerprotate(50, -10, 0.25)', null, 20)
 
 
-Molang.cache_enabled = false;
+MolangParser.cache_enabled = false;
 console.time(chalk.cyanBright('Raw Performance'));
 for (var i = 0; i < 100000; i++) {
-    Molang.parse('false ? 5 : (10 * math.pow(2+2, 2))')
+    MolangParser.parse('false ? 5 : (10 * math.pow(2+2, 2))')
 }
 console.timeEnd(chalk.cyanBright('Raw Performance'))
 
-Molang.cache_enabled = true;
+MolangParser.cache_enabled = true;
 console.time(chalk.cyanBright('Cached Performance'));
 for (var i = 0; i < 100000; i++) {
-    Molang.parse('false ? 5 : (10 * math.pow(2+2, 2))')
+    MolangParser.parse('false ? 5 : (10 * math.pow(2+2, 2))')
 }
 console.timeEnd(chalk.cyanBright('Cached Performance'))

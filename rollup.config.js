@@ -1,0 +1,18 @@
+export default {
+	input: 'src/molang.js',
+	output: [
+		{
+			file: 'dist/molang.cjs.js',
+			format: 'cjs'
+		},
+		{
+			file: 'dist/molang.esm.js',
+			format: 'esm'
+		},
+		{
+			name: 'Molang',
+			file: 'dist/molang.umd.js',
+			format: 'umd'
+		}
+	]
+}
