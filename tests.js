@@ -3,7 +3,7 @@ const chalk = require('chalk');
 
 const MolangParser = new Molang();
 
-function test(name, expression, variables, expected_result) {
+function test(name, expression, expected_result, variables) {
     let result = MolangParser.parse(expression, variables || undefined);
     if (result == expected_result) {
         console.log(chalk.green(`Test '${name}' successful!`))
@@ -12,22 +12,25 @@ function test(name, expression, variables, expected_result) {
     }
 }
 
-test('Basic', '1+1', null, 2)
+test('Basic', '1+1', 2)
 
-test('Order of operation', '1 + 1 * 2', null, 3)
+test('Order of operation', '1 + 1 * 2', 3)
 
-test('Ternary', 'false ? 5 : 10', null, 10)
+test('Binary', 'true ? 10', 10)
 
-test('Multiline', 'temp.test = 33; return temp.test * 2', null, 66)
+test('Ternary', 'false ? 5 : 10', 10)
 
-test('Return', 'temp.test = 4; return temp.test; return 5;', null, 4)
+test('Multiline', 'temp.test = 33; return temp.test * 2', 66)
 
-test ('Math', 'Math.pow(Math.clamp(500, 0, 3), 2)', null, 9)
+test('Return', 'temp.test = 4; return temp.test; return 5;', 4)
 
-test ('Variables', 'variable.a + variable.b', {'variable.a': 2, 'variable.b': 'Math.sqrt(9)'}, 5)
+test('Math', 'Math.pow(Math.clamp(500, 0, 3), 2)', 9)
 
-test ('Lerprotate', 'Math.lerprotate(10, 380, 0.5) + Math.lerprotate(50, -10, 0.25)', null, 20)
+test('Variables', 'variable.a + variable.b', 5, {'variable.a': 2, 'variable.b': 'Math.sqrt(9)'})
 
+test('Lerprotate', 'Math.lerprotate(10, 380, 0.5) + Math.lerprotate(50, -10, 0.25)', 20)
+
+test('Inverse Trigonometry', 'Math.round(Math.acos(-1) + Math.atan2(2, 4))', 207)
 
 MolangParser.cache_enabled = false;
 console.time(chalk.cyanBright('Raw Performance'));

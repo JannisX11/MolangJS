@@ -1,3 +1,7 @@
+import { terser } from "rollup-plugin-terser";
+
+const production = !process.env.ROLLUP_WATCH;
+
 export default {
 	input: 'src/molang.js',
 	output: [
@@ -12,7 +16,10 @@ export default {
 		{
 			name: 'Molang',
 			file: 'dist/molang.umd.js',
-			format: 'umd'
+			format: 'umd',
+			plugins: [
+				production && terser()
+			]
 		}
 	]
 }
