@@ -356,7 +356,9 @@ function Molang() {
 				// Misc
 				case 122:	return MathUtil.dieRoll(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
 				case 123:	return MathUtil.dieRollInt(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
-				case 125:	return 0;
+				case 124:
+					let t = iterateExp(T.a);
+					return 3*Math.pow(t, 2) - 2*Math.pow(t, 3);
 				case 125:	return MathUtil.randomInt(iterateExp(T.a), iterateExp(T.b));
 			}
 		}
