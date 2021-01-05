@@ -28,6 +28,8 @@ test('Math', 'Math.pow(Math.clamp(500, 0, 3), 2)', 9)
 
 test('Variables', 'variable.a + variable.b', 5, {'variable.a': 2, 'variable.b': 'Math.sqrt(9)'})
 
+test('Variable Check', 'variable.a == 3', 1, {'variable.a': 3})
+
 test('Lerprotate', 'Math.lerprotate(10, 380, 0.5) + Math.lerprotate(50, -10, 0.25)', 20)
 
 test('Inverse Trigonometry', 'Math.round(Math.acos(-1) + Math.atan2(2, 4))', 207)

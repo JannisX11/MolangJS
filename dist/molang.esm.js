@@ -131,7 +131,7 @@ function Molang() {
 	
 		//allocation
 		var match = s.length > 6 && s.match(/(temp|variable)\.\w+=/);
-		if (match) {
+		if (match && s[match.index + match[0].length] !== '=') {
 			let name = match[0].replace(/=$/, '');
 			let value = s.substr(match.index + match[0].length);
 			return new Allocation(name, value)
