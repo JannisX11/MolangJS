@@ -14,7 +14,10 @@ function trimInput(string) {
 	}
 	return string;
 }
-
+const Constants = {
+	'true': 1,
+	'false': 0,
+}
 
 
 function Molang() {
@@ -84,9 +87,9 @@ function Molang() {
 		}
 	
 		//allocation
-		var match = s.length > 6 && s.match(/(temp|variable)\.\w+=/)
+		var match = s.length > 4 && s.match(/(temp|variable|t|v)\.\w+=/);
 		if (match && s[match.index + match[0].length] !== '=') {
-			let name = match[0].replace(/=$/, '');
+			let name = match[0].replace(/=$/, '').replace(/^v\./, 'variable.').replace(/^t\./, 'temp.');
 			let value = s.substr(match.index + match[0].length)
 			return new Allocation(name, value)
 		}
@@ -238,15 +241,17 @@ function Molang() {
 		if (typeof T === 'number') {
 			return T
 		} else if (typeof T === 'string') {
-			var val = current_variables[T]
+			if (Constants[T] != undefined) return Constants[T];
+
+			if (T.substr(1, 1) == '.') {
+				let char = T.substr(0, 1);
+				if (char == 'q') T = 'query' + T.substr(1);
+				if (char == 'v') T = 'variable' + T.substr(1);
+				if (char == 't') T = 'temp' + T.substr(1);
+			}
+			var val = current_variables[T];
 			if (val === undefined) {
-				if (T === 'true') {
-					return 1;
-				} else if (T === 'false') {
-					return 0;
-				} else {
-					val = self.global_variables[T];
-				}
+				val = self.global_variables[T];
 			}
 			if (val === undefined && typeof self.variableHandler === 'function') {
 				val = self.variableHandler(T, current_variables)
