@@ -77,6 +77,8 @@ function Molang() {
 	this.cache_enabled = true;
 	this.use_radians = false;
 
+	this.variableHandler = null;
+
 	let cached = {};
 	let current_variables = {};
 
@@ -388,8 +390,7 @@ function Molang() {
 				cached[input] = expression;
 			}
 		}
-		var value = calculate(expression, variables);
-		return value;
+		return calculate(expression, variables);
 	};
 }
 

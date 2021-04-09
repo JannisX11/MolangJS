@@ -1,1 +1,403 @@
-!function(e,r){"object"==typeof exports&&"undefined"!=typeof module?module.exports=r():"function"==typeof define&&define.amd?define(r):(e="undefined"!=typeof globalThis?globalThis:e||self).Molang=r()}(this,(function(){"use strict";const e=e=>((e+180)%360+180)%360;var r={clamp:(e,r,t)=>(e>t&&(e=t),(e<r||isNaN(e))&&(e=r),e),random:(e,r)=>e+Math.random()*(r-e),randomInt:(e,r)=>(e=Math.ceil(e),r=Math.floor(r),e+Math.floor(Math.random()*(r-e+1))),dieRoll(e,r,t){e=this.clamp(e,0,1e9);let n=0;for(var a=0;a<e;a++)n+=this.random(r,t);return n},dieRollInt(e,r,t){e=this.clamp(e,0,1e9);let n=0;for(var a=0;a<e;a++)n+=this.randomInt(r,t);return n},lerp:(e,r,t)=>e+(r-e)*t,lerpRotate(r,t,n){let a=e(r),s=e(t);a>s&&([a,s]=[s,a]);var u=s-a;return u>180?e(s+n*(360-u)):a+n*u}};const t={true:1,false:0};return function(){const e=this;this.global_variables={},this.cache_enabled=!0,this.use_radians=!1;let n={},a={};function s(e){this.lines=e.split(";").map((e=>o(e)))}function u(e,r,t,n){this.operator=e,this.a=o(r),void 0!==t&&(this.b=o(t)),void 0!==n&&(this.c=o(n))}function c(e,r){this.value=o(r),this.name=e}function i(e,r){this.value=o(r),this.type=e}let l=()=>this.use_radians?1:Math.PI/180;function o(e){if(!e)return 0;if(!isNaN(e))return parseFloat(e);for(e=e.replace(/\s/g,"");h(e);)e=e.substr(1,e.length-2);var r;if(r=e.length>5&&e.match(/^return/))return new i(r[0],e.substr(r[0].length));if((r=e.length>4&&e.match(/(temp|variable|t|v)\.\w+=/))&&"="!==e[r.index+r[0].length]){return new c(r[0].replace(/=$/,"").replace(/^v\./,"variable.").replace(/^t\./,"temp."),e.substr(r.index+r[0].length))}var t=b(e,"?");if(t){let e=b(t[1],":");return e&&e.length?new u(10,t[0],e[0],e[1]):new u(10,t[0],t[1],0)}var n=f(e,"&&",11)||f(e,"||",12)||f(e,"<",13)||f(e,"<=",14)||f(e,">",15)||f(e,">=",16)||f(e,"==",17)||f(e,"!=",18)||f(e,"+",1,!0)||function(e,r,t,n){var a=b(e,r,n);if(a){if(0===a[0].length)return new u(t,0,a[1]);if(!1==="+*/<>=|&?:".includes(a[0].substr(-1)))return new u(t,a[0],a[1])}}(e,"-",2,!0)||f(e,"*",3)||f(e,"/",4);if(n)return n;if("math."===e.substr(0,5)){if("math.pi"===e.substr(0,7))return Math.PI;let r=e.search(/\(/),t=e.substr(5,r-5),n=e.substr(r+1,e.length-r-2),s=b(n,",")||[n];if(s.length>1){var a=b(s[1],",");a&&a.length>1&&(s[1]=a[0],s[2]=a[1])}switch(t){case"abs":return new u(100,s[0]);case"sin":return new u(101,s[0]);case"cos":return new u(102,s[0]);case"exp":return new u(103,s[0]);case"ln":return new u(104,s[0]);case"pow":return new u(105,s[0],s[1]);case"sqrt":return new u(106,s[0]);case"random":return new u(107,s[0],s[1]);case"ceil":return new u(108,s[0]);case"round":return new u(109,s[0]);case"trunc":return new u(110,s[0]);case"floor":return new u(111,s[0]);case"mod":return new u(112,s[0],s[1]);case"min":return new u(113,s[0],s[1]);case"max":return new u(114,s[0],s[1]);case"clamp":return new u(115,s[0],s[1],s[2]);case"lerp":return new u(116,s[0],s[1],s[2]);case"lerprotate":return new u(117,s[0],s[1],s[2]);case"asin":return new u(118,s[0]);case"acos":return new u(119,s[0]);case"atan":return new u(120,s[0]);case"atan2":return new u(121,s[0],s[1]);case"die_roll":return new u(122,s[0],s[1],s[2]);case"die_roll_integer":return new u(123,s[0],s[1],s[2]);case"hermite_blend":return new u(124,s[0]);case"random_integer":return new u(125,s[0],s[1],s[2])}}return(t=e.match(/[a-zA-Z0-9._]{2,}/g))&&1===t.length?e:0}function h(e){if("("===e.substr(0,1)&&")"===e.substr(-1)){let t=0;for(var r=0;r<e.length-1;r++){switch(e[r]){case"(":t++;break;case")":t--}if(0==t)return!1}return!0}}function f(e,r,t,n){var a=b(e,r,n);if(a)return new u(t,a[0],a[1])}function b(e,r,t){for(var n=t?-1:1,a=t?e.length-1:0,s=0,u="string"==typeof r;t?a>=0:a<e.length;){if("("===e[a])s+=n;else if(")"===e[a])s-=n;else if(0===s){var c=e.substr(a,r.length);if(u&&c===r)return[e.substr(0,a),e.substr(a+r.length)];if(!u)for(var i=0;i<r.length;i++)if(r[i]===c)return[e.substr(0,a),e.substr(a+r[i].length)]}a+=n}}function p(n){if("number"==typeof n)return n;if("string"==typeof n){if(null!=t[n])return t[n];if("."==n.substr(1,1)){let e=n.substr(0,1);"q"==e&&(n="query"+n.substr(1)),"v"==e&&(n="variable"+n.substr(1)),"t"==e&&(n="temp"+n.substr(1))}var s=a[n];return void 0===s&&(s=e.global_variables[n]),void 0===s&&"function"==typeof e.variableHandler&&(s=e.variableHandler(n,a)),"string"==typeof s&&(s=e.parse(s,a)),s||0}if(n instanceof i)return p(n.value);if(n instanceof c)return a[n.name]=p(n.value);if(n instanceof u)switch(n.operator){case 1:return p(n.a)+p(n.b);case 2:return p(n.a)-p(n.b);case 3:return p(n.a)*p(n.b);case 4:return p(n.a)/p(n.b);case 10:return p(n.a)?p(n.b):p(n.c);case 11:return p(n.a)&&p(n.b)?1:0;case 12:return p(n.a)||p(n.b)?1:0;case 13:return p(n.a)<p(n.b)?1:0;case 14:return p(n.a)<=p(n.b)?1:0;case 15:return p(n.a)>p(n.b)?1:0;case 16:return p(n.a)>=p(n.b)?1:0;case 17:return p(n.a)===p(n.b)?1:0;case 18:return p(n.a)!==p(n.b)?1:0;case 100:return Math.abs(p(n.a));case 101:return Math.sin(p(n.a)*l());case 102:return Math.cos(p(n.a)*l());case 103:return Math.exp(p(n.a));case 104:return Math.log(p(n.a));case 105:return Math.pow(p(n.a),p(n.b));case 106:return Math.sqrt(p(n.a));case 107:return r.random(p(n.a),p(n.b));case 108:return Math.ceil(p(n.a));case 109:return Math.round(p(n.a));case 110:return Math.trunc(p(n.a));case 111:return Math.floor(p(n.a));case 112:return p(n.a)%p(n.b);case 113:return Math.min(p(n.a),p(n.b));case 114:return Math.max(p(n.a),p(n.b));case 115:return r.clamp(p(n.a),p(n.b),p(n.c));case 116:return r.lerp(p(n.a),p(n.b),p(n.c));case 117:return r.lerpRotate(p(n.a),p(n.b),p(n.c));case 118:return Math.asin(p(n.a))/l();case 119:return Math.acos(p(n.a))/l();case 120:return Math.atan(p(n.a))/l();case 121:return Math.atan2(p(n.a),p(n.b))/l();case 122:return r.dieRoll(p(n.a),p(n.b),p(n.c));case 123:return r.dieRollInt(p(n.a),p(n.b),p(n.c));case 124:let e=p(n.a);return 3*Math.pow(e,2)-2*Math.pow(e,3);case 125:return r.randomInt(p(n.a),p(n.b))}return 0}this.parse=(e,r)=>{if("number"==typeof e)return isNaN(e)?0:e;if("string"!=typeof e)return 0;var t;if((t=(t=e).toLowerCase().trim()).includes(";")&&(t=t.replace(/;\s+/g,";").replace(/;\s*$/,"")),e=t,this.cache_enabled&&n[e])var u=n[e];else{u=new s(e);this.cache_enabled&&(n[e]=u)}return function(e,r){a=r||{};var t=0;for(var n of e.lines){let r=p(n);if(++t==e.lines.length||n instanceof i&&"return"===n.type)return r}return 0}(u,r)}}}));
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+	typeof define === 'function' && define.amd ? define(factory) :
+	(global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Molang = factory());
+}(this, (function () { 'use strict';
+
+	const radify = n => (((n + 180) % 360) +180) % 360;
+
+	var MathUtil = {
+		clamp(number, min, max) {
+			if (number > max) number = max;
+			if (number < min || isNaN(number)) number = min;
+			return number;
+		},
+		random(a, b) {
+			return a + Math.random() * (b-a)
+		},
+		randomInt(a, b) {
+			a = Math.ceil(a);
+			b = Math.floor(b);
+			return a + Math.floor(Math.random() * (b - a + 1));
+		},
+		dieRoll(num, low, high) {
+			num = this.clamp(num, 0, 1e9);
+			let sum = 0;
+			for (var i = 0; i < num; i++) {
+				sum += this.random(low, high);
+			}
+			return sum;
+		},
+		dieRollInt(num, low, high) {
+			num = this.clamp(num, 0, 1e9);
+			let sum = 0;
+			for (var i = 0; i < num; i++) {
+				sum += this.randomInt(low, high);
+			}
+			return sum;
+		},
+		lerp(start, end, lerp) {
+			return start + (end - start) * lerp;
+		},
+		lerpRotate(start, end, lerp) {
+			let a = radify(start);
+			let b = radify(end);
+
+			if (a > b) [a, b] = [b, a];
+			var diff = b-a;
+			if (diff > 180) {
+				return radify(b + lerp * (360-diff));
+			} else {
+				return a + lerp * diff;
+			}
+		}
+	};
+
+	/**
+	 * Author: JannisX11
+	 * License: MIT
+	 */
+
+
+	// Util
+	function trimInput(string) {
+		string = string.toLowerCase().trim();
+		if (string.includes(';')) {
+			string = string.replace(/;\s+/g, ';').replace(/;\s*$/, '');
+		}
+		return string;
+	}
+	const Constants = {
+		'true': 1,
+		'false': 0,
+	};
+
+
+	function Molang() {
+
+		const self = this;
+
+		this.global_variables = {};
+		this.cache_enabled = true;
+		this.use_radians = false;
+
+		this.variableHandler = null;
+
+		let cached = {};
+		let current_variables = {};
+
+
+		// Tree Types
+		function Expression(string) {
+			this.lines = string.split(';').map(line => {
+				return iterateString(line);
+			});
+		}
+		function Comp(operator, a, b, c) {
+			this.operator = operator;
+			this.a = iterateString(a);
+			if (b !== undefined) this.b = iterateString(b);
+			if (c !== undefined) this.c = iterateString(c);
+		}
+		function Allocation(name, value) {
+			this.value = iterateString(value);
+			this.name = name;
+		}
+		function Statement(type, value) {
+			this.value = iterateString(value);
+			this.type = type;
+		}
+
+		let angleFactor = () => this.use_radians ? 1 : (Math.PI/180);
+
+		function calculate(expression, variables) {
+			current_variables = variables||{};
+			var i = 0;
+			for (var line of expression.lines) {
+				let result = iterateExp(line);
+				i++;
+				if (i == expression.lines.length || (line instanceof Statement && line.type === 'return')) {
+					return result;
+				}
+			}
+			return 0;
+		}
+		
+		function iterateString(s) {
+			//Iterates through string, returns float, string or comp;
+			if (!s) return 0;
+			if (!isNaN(s)) return parseFloat(s);
+		
+			s = s.replace(/\s/g, '');
+		
+			while (canTrimParentheses(s)) {
+				s = s.substr(1, s.length-2);
+			}
+		
+			//Statement
+			var match = s.length > 5 && s.match(/^return/);
+			if (match) {
+				return new Statement(match[0], s.substr(match[0].length))
+			}
+		
+			//allocation
+			var match = s.length > 4 && s.match(/(temp|variable|t|v)\.\w+=/);
+			if (match && s[match.index + match[0].length] !== '=') {
+				let name = match[0].replace(/=$/, '').replace(/^v\./, 'variable.').replace(/^t\./, 'temp.');
+				let value = s.substr(match.index + match[0].length);
+				return new Allocation(name, value)
+			}
+		
+			//ternary
+			var split = splitString(s, '?');
+			if (split) {
+				let ab = splitString(split[1], ':');
+				if (ab && ab.length) {
+					return new Comp(10, split[0], ab[0], ab[1]);
+				} else {
+					return new Comp(10, split[0], split[1], 0);
+				}
+			}
+		
+			//2 part operators
+			var comp = (
+				testOp(s, '&&', 11) ||
+				testOp(s, '||', 12) ||
+				testOp(s, '<', 13) ||
+				testOp(s, '<=', 14) ||
+				testOp(s, '>', 15) ||
+				testOp(s, '>=', 16) ||
+				testOp(s, '==', 17) ||
+				testOp(s, '!=', 18) ||
+		
+				testOp(s, '+', 1, true) ||
+				testMinus(s, '-', 2, true) ||
+				testOp(s, '*', 3) ||
+				testOp(s, '/', 4)
+			);
+			if (comp) return comp;
+		
+			if (s.substr(0, 5) === 'math.') {
+				if (s.substr(0, 7) === 'math.pi') {
+					return Math.PI
+				}
+				let begin = s.search(/\(/);
+				let operator = s.substr(5, begin-5);
+				let inner = s.substr(begin+1, s.length-begin-2);
+				let params = splitString(inner, ',')||[inner];
+				if (params.length > 1) {
+					var last2 = splitString(params[1], ',');
+					if (last2 && last2.length > 1) {
+						params[1] = last2[0];
+						params[2] = last2[1];
+					}
+				}
+		
+				switch (operator) {
+					case 'abs': 			return new Comp(100, params[0]);
+					case 'sin': 			return new Comp(101, params[0]);
+					case 'cos': 			return new Comp(102, params[0]);
+					case 'exp': 			return new Comp(103, params[0]);
+					case 'ln': 				return new Comp(104, params[0]);
+					case 'pow': 			return new Comp(105, params[0], params[1]);
+					case 'sqrt': 			return new Comp(106, params[0]);
+					case 'random': 			return new Comp(107, params[0], params[1]);
+					case 'ceil': 			return new Comp(108, params[0]);
+					case 'round': 			return new Comp(109, params[0]);
+					case 'trunc': 			return new Comp(110, params[0]);
+					case 'floor': 			return new Comp(111, params[0]);
+					case 'mod': 			return new Comp(112, params[0], params[1]);
+					case 'min': 			return new Comp(113, params[0], params[1]);
+					case 'max': 			return new Comp(114, params[0], params[1]);
+					case 'clamp': 			return new Comp(115, params[0], params[1], params[2]);
+					case 'lerp': 			return new Comp(116, params[0], params[1], params[2]);
+					case 'lerprotate': 		return new Comp(117, params[0], params[1], params[2]);
+					case 'asin': 			return new Comp(118, params[0]);
+					case 'acos': 			return new Comp(119, params[0]);
+					case 'atan': 			return new Comp(120, params[0]);
+					case 'atan2': 			return new Comp(121, params[0], params[1]);
+					case 'die_roll': 		return new Comp(122, params[0], params[1], params[2]);
+					case 'die_roll_integer':return new Comp(123, params[0], params[1], params[2]);
+					case 'hermite_blend': 	return new Comp(124, params[0]);
+					case 'random_integer': 	return new Comp(125, params[0], params[1], params[2]);
+					
+				}
+			}
+			split = s.match(/[a-zA-Z0-9._]{2,}/g);
+			if (split && split.length === 1) {
+				return s;
+			}
+			return 0;
+		}
+		function canTrimParentheses(s) {
+			if (s.substr(0, 1) === '(' && s.substr(-1) === ')') {
+				let level = 0;
+				for (var i = 0; i < s.length-1; i++) {
+					switch (s[i]) {
+						case '(': level++; break;
+						case ')': level--; break;
+					}
+					if (level == 0) return false;
+				}
+				return true;
+			}
+		}
+		function testOp(s, char, operator, inverse) {
+		
+			var split = splitString(s, char, inverse);
+			if (split) {
+				return new Comp(operator, split[0], split[1])
+			}
+		}
+		function testMinus(s, char, operator, inverse) {
+		
+			var split = splitString(s, char, inverse);
+			if (split) {
+				if (split[0].length === 0) {
+					return new Comp(operator, 0, split[1])
+				} else if ('+*/<>=|&?:'.includes(split[0].substr(-1)) === false) {
+					return new Comp(operator, split[0], split[1])
+				}
+			}
+		}
+		function splitString(s, char, inverse) {
+			var direction = inverse ? -1 : 1;
+			var i = inverse ? s.length-1 : 0;
+			var level = 0;
+			var is_string = typeof char === 'string';
+			while (inverse ? i >= 0 : i < s.length) {
+				if (s[i] === '(') {
+					level += direction;
+				} else if (s[i] === ')') {
+					level -= direction;
+				} else if (level === 0) {
+					var letters = s.substr(i, char.length);
+					if (is_string && letters === char) {
+						return [
+							s.substr(0, i),
+							s.substr(i+char.length)
+						];
+					} else if (!is_string) {
+						for (var xi = 0; xi < char.length; xi++) {
+							if (char[xi] === letters) {
+								return [
+									s.substr(0, i),
+									s.substr(i+char[xi].length)
+								];
+							}
+						}
+					}
+				}
+				i += direction;
+			}
+		}
+		function iterateExp(T) {
+			if (typeof T === 'number') {
+				return T
+			} else if (typeof T === 'string') {
+				if (Constants[T] != undefined) return Constants[T];
+
+				if (T.substr(1, 1) == '.') {
+					let char = T.substr(0, 1);
+					if (char == 'q') T = 'query' + T.substr(1);
+					if (char == 'v') T = 'variable' + T.substr(1);
+					if (char == 't') T = 'temp' + T.substr(1);
+				}
+				var val = current_variables[T];
+				if (val === undefined) {
+					val = self.global_variables[T];
+				}
+				if (val === undefined && typeof self.variableHandler === 'function') {
+					val = self.variableHandler(T, current_variables);
+				}
+				if (typeof val === 'string') {
+					val = self.parse(val, current_variables);
+				}
+				return val||0;
+		
+			} else if (T instanceof Statement) {
+				return iterateExp(T.value);
+		
+			} else if (T instanceof Allocation) {
+				return current_variables[T.name] = iterateExp(T.value);
+		
+			} else if (T instanceof Comp) {
+
+				switch (T.operator) {
+					//Basic
+					case 1:		return iterateExp(T.a) + iterateExp(T.b);
+					case 2:		return iterateExp(T.a) - iterateExp(T.b);
+					case 3:		return iterateExp(T.a) * iterateExp(T.b);
+					case 4:		return iterateExp(T.a) / iterateExp(T.b);
+
+					//Logical
+					case 10:	return iterateExp(T.a) ?  iterateExp(T.b) : iterateExp(T.c);
+					case 11:	return iterateExp(T.a) && iterateExp(T.b) ? 1 : 0;
+					case 12:	return iterateExp(T.a) || iterateExp(T.b) ? 1 : 0;
+					case 13:	return iterateExp(T.a) <  iterateExp(T.b) ? 1 : 0;
+					case 14:	return iterateExp(T.a) <= iterateExp(T.b) ? 1 : 0;
+					case 15:	return iterateExp(T.a) >  iterateExp(T.b) ? 1 : 0;
+					case 16:	return iterateExp(T.a) >= iterateExp(T.b) ? 1 : 0;
+					case 17:	return iterateExp(T.a) === iterateExp(T.b) ? 1 : 0;
+					case 18:	return iterateExp(T.a) !== iterateExp(T.b) ? 1 : 0;
+
+					//Math
+					case 100:	return Math.abs(iterateExp(T.a));
+					case 101:	return Math.sin(iterateExp(T.a) * angleFactor());
+					case 102:	return Math.cos(iterateExp(T.a) * angleFactor());
+					case 103:	return Math.exp(iterateExp(T.a));
+					case 104:	return Math.log(iterateExp(T.a));
+					case 105:	return Math.pow(iterateExp(T.a), iterateExp(T.b));
+					case 106:	return Math.sqrt(iterateExp(T.a));
+					case 107:	return MathUtil.random(iterateExp(T.a), iterateExp(T.b));
+					case 108:	return Math.ceil(iterateExp(T.a));
+					case 109:	return Math.round(iterateExp(T.a));
+					case 110:	return Math.trunc(iterateExp(T.a));
+					case 111:	return Math.floor(iterateExp(T.a));
+					case 112:	return iterateExp(T.a) % iterateExp(T.b);
+					case 113:	return Math.min(iterateExp(T.a), iterateExp(T.b));
+					case 114:	return Math.max(iterateExp(T.a), iterateExp(T.b));
+					case 115:	return MathUtil.clamp(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					//	Lerp
+					case 116:	return MathUtil.lerp(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					case 117:	return MathUtil.lerpRotate(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					// Inverse Trigonometry
+					case 118:	return Math.asin(iterateExp(T.a)) / angleFactor();
+					case 119:	return Math.acos(iterateExp(T.a)) / angleFactor();
+					case 120:	return Math.atan(iterateExp(T.a)) / angleFactor();
+					case 121:	return Math.atan2(iterateExp(T.a), iterateExp(T.b)) / angleFactor();
+					// Misc
+					case 122:	return MathUtil.dieRoll(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					case 123:	return MathUtil.dieRollInt(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					case 124:
+						let t = iterateExp(T.a);
+						return 3*Math.pow(t, 2) - 2*Math.pow(t, 3);
+					case 125:	return MathUtil.randomInt(iterateExp(T.a), iterateExp(T.b));
+				}
+			}
+			return 0;
+		}
+
+
+		this.parse = (input, variables) => {
+			if (typeof input === 'number') {
+				return isNaN(input) ? 0 : input
+			}
+			if (typeof input !== 'string') return 0;
+			input = trimInput(input);
+		
+			if (this.cache_enabled && cached[input]) {
+				var expression = cached[input];
+			} else {
+				var expression = new Expression(input);
+				if (this.cache_enabled) {
+					cached[input] = expression;
+				}
+			}
+			return calculate(expression, variables);
+		};
+	}
+
+	return Molang;
+
+})));
