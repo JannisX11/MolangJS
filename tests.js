@@ -36,6 +36,13 @@ test('Lerprotate', 'Math.lerprotate(10, 380, 0.5) + Math.lerprotate(50, -10, 0.2
 
 test('Inverse Trigonometry', 'Math.round(Math.acos(-1) + Math.atan2(2, 4))', 207)
 
+test('Null Coalescing', '(variable.non_existent ?? 3) + (variable.existent ?? 9)', 5, {'variable.existent': 2})
+
+test('Remember', 'variable.b * 2', 4)
+
+MolangParser.resetVariables();
+test('Reset Variables', 'variable.b * 2', 0)
+
 MolangParser.cache_enabled = false;
 console.time(chalk.cyanBright('Raw Performance'));
 for (var i = 0; i < 100000; i++) {

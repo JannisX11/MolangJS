@@ -6,6 +6,10 @@ export default class MolangParser {
 	 * @param variables Object of variables to pass to the parser. Each variable can be a number or another expression
 	 */
 	parse(expression: string, variables?: object): number
+	/**
+	 * Deletes all saved variables
+	 */
+	resetVariables(): void
 	cache_enabled: boolean
 	use_radians: boolean
 	/**

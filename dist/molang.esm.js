@@ -79,6 +79,7 @@ function Molang() {
 
 	let cached = {};
 	let current_variables = {};
+	let found_unassigned_variable = false;
 
 
 	// Tree Types
@@ -105,7 +106,11 @@ function Molang() {
 	let angleFactor = () => this.use_radians ? 1 : (Math.PI/180);
 
 	function calculate(expression, variables) {
-		current_variables = variables||{};
+		if (variables) {
+			for (var key in variables) {
+				current_variables[key] = variables[key];
+			}
+		}
 		var i = 0;
 		for (var line of expression.lines) {
 			let result = iterateExp(line);
@@ -141,6 +146,10 @@ function Molang() {
 			let value = s.substr(match.index + match[0].length);
 			return new Allocation(name, value)
 		}
+
+		// Null Coalescing
+		var comp = testOp(s, '??', 19);
+		if (comp) return comp;
 	
 		//ternary
 		var split = splitString(s, '?');
@@ -286,6 +295,8 @@ function Molang() {
 		}
 	}
 	function iterateExp(T) {
+		found_unassigned_variable = false;
+
 		if (typeof T === 'number') {
 			return T
 		} else if (typeof T === 'string') {
@@ -306,6 +317,8 @@ function Molang() {
 			}
 			if (typeof val === 'string') {
 				val = self.parse(val, current_variables);
+			} else if (val === undefined) {
+				found_unassigned_variable = true;
 			}
 			return val||0;
 	
@@ -334,6 +347,8 @@ function Molang() {
 				case 16:	return iterateExp(T.a) >= iterateExp(T.b) ? 1 : 0;
 				case 17:	return iterateExp(T.a) === iterateExp(T.b) ? 1 : 0;
 				case 18:	return iterateExp(T.a) !== iterateExp(T.b) ? 1 : 0;
+				case 19:	var variable = iterateExp(T.a);
+							return found_unassigned_variable ? iterateExp(T.b) : variable;
 
 				//Math
 				case 100:	return Math.abs(iterateExp(T.a));
@@ -389,6 +404,9 @@ function Molang() {
 			}
 		}
 		return calculate(expression, variables);
+	};
+	this.resetVariables = () => {
+		current_variables = {};
 	};
 }
 
