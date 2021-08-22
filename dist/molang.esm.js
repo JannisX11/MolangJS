@@ -166,17 +166,18 @@ function Molang() {
 		var comp = (
 			testOp(s, '&&', 11) ||
 			testOp(s, '||', 12) ||
-			testOp(s, '<', 13) ||
 			testOp(s, '<=', 14) ||
-			testOp(s, '>', 15) ||
+			testOp(s, '<', 13) ||
 			testOp(s, '>=', 16) ||
+			testOp(s, '>', 15) ||
 			testOp(s, '==', 17) ||
 			testOp(s, '!=', 18) ||
 	
 			testOp(s, '+', 1, true) ||
 			testMinus(s, '-', 2, true) ||
 			testOp(s, '*', 3) ||
-			testOp(s, '/', 4)
+			testOp(s, '/', 4) ||
+			testNegator(s, '!')
 		);
 		if (comp) return comp;
 	
@@ -263,6 +264,11 @@ function Molang() {
 			}
 		}
 	}
+	function testNegator(s, char) {
+		if (s[0] == char && s.length > 1) {
+			return new Comp(5, s.substr(1), 0)
+		}
+	}
 	function splitString(s, char, inverse) {
 		var direction = inverse ? -1 : 1;
 		var i = inverse ? s.length-1 : 0;
@@ -336,6 +342,7 @@ function Molang() {
 				case 2:		return iterateExp(T.a) - iterateExp(T.b);
 				case 3:		return iterateExp(T.a) * iterateExp(T.b);
 				case 4:		return iterateExp(T.a) / iterateExp(T.b);
+				case 5:		return iterateExp(T.a) == 0 ? 1 : 0;
 
 				//Logical
 				case 10:	return iterateExp(T.a) ?  iterateExp(T.b) : iterateExp(T.c);

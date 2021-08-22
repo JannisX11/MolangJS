@@ -20,6 +20,10 @@ test('Binary', 'true ? 10', 10)
 
 test('Ternary', 'false ? 5 : 10', 10)
 
+test('Greater or equal', '3 >= 4', 0)
+
+test('Negation', '!variable.value ? 100 : (10 + !variable.nothing)', 11, {'variable.value': 2, 'variable.nothing': 0})
+
 test('Multiline', 'temp.test = 33; return temp.test * 2', 66)
 
 test('Return', 'temp.test = 4; return temp.test; return 5;', 4)
