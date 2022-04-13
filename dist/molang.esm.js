@@ -94,6 +94,10 @@ function Molang() {
 		if (b !== undefined) this.b = iterateString(b);
 		if (c !== undefined) this.c = iterateString(c);
 	}
+	function QueryFunction(query, args) {
+		this.query = query;
+		this.args = args.map(string => iterateString(string));
+	}
 	function Allocation(name, value) {
 		this.value = iterateString(value);
 		this.name = name;
@@ -138,11 +142,19 @@ function Molang() {
 		if (match) {
 			return new Statement(match[0], s.substr(match[0].length))
 		}
+
+		if (s.substring(1, 2) == '.') {
+			let char = s.substring(0, 1);
+			if (char == 'q') s = 'query' + s.substring(1);
+			if (char == 'v') s = 'variable' + s.substring(1);
+			if (char == 't') s = 'temp' + s.substring(1);
+			if (char == 'c') s = 'context' + s.substring(1);
+		}
 	
 		//allocation
-		var match = s.length > 4 && s.match(/(temp|variable|t|v)\.\w+=/);
+		var match = s.length > 4 && s.match(/(temp|variable)\.\w+=/);
 		if (match && s[match.index + match[0].length] !== '=') {
-			let name = match[0].replace(/=$/, '').replace(/^v\./, 'variable.').replace(/^t\./, 'temp.');
+			let name = match[0].replace(/=$/, '');
 			let value = s.substr(match.index + match[0].length);
 			return new Allocation(name, value)
 		}
@@ -176,7 +188,7 @@ function Molang() {
 			testOp(s, '+', 1, true) ||
 			testMinus(s, '-', 2, true) ||
 			testOp(s, '*', 3) ||
-			testOp(s, '/', 4) ||
+			testOp(s, '/', 4, true) ||
 			testNegator(s, '!')
 		);
 		if (comp) return comp;
@@ -228,8 +240,19 @@ function Molang() {
 			}
 		}
 		split = s.match(/[a-zA-Z0-9._]{2,}/g);
-		if (split && split.length === 1) {
+		if (split && split.length === 1 && split[0].length >= s.length-2) {
 			return s;
+		} else if (s.includes('(') && s[s.length-1] == ')') {
+			let begin = s.search(/\(/);
+			let query_name = s.substr(0, begin);
+			let inner = s.substr(begin+1, s.length-begin-2);
+			let params = [inner];
+			let split_result;
+			while (split_result = splitString(params[params.length-1], ',')) {
+				params.splice(params.length-1, 1, ...split_result);
+			}
+			
+			return new QueryFunction(query_name, params);
 		}
 		return 0;
 	}
@@ -300,7 +323,12 @@ function Molang() {
 			i += direction;
 		}
 	}
-	function iterateExp(T) {
+	function compareValues(a, b) {
+		if (!(typeof a === 'string' && a[0] == `'`)) a = iterateExp(a, true);
+		if (!(typeof b === 'string' && b[0] == `'`)) b = iterateExp(b, true);
+		return a === b;
+	}
+	function iterateExp(T, allow_strings) {
 		found_unassigned_variable = false;
 
 		if (typeof T === 'number') {
@@ -308,12 +336,6 @@ function Molang() {
 		} else if (typeof T === 'string') {
 			if (Constants[T] != undefined) return Constants[T];
 
-			if (T.substr(1, 1) == '.') {
-				let char = T.substr(0, 1);
-				if (char == 'q') T = 'query' + T.substr(1);
-				if (char == 'v') T = 'variable' + T.substr(1);
-				if (char == 't') T = 'temp' + T.substr(1);
-			}
 			var val = current_variables[T];
 			if (val === undefined) {
 				val = self.global_variables[T];
@@ -321,10 +343,12 @@ function Molang() {
 			if (val === undefined && typeof self.variableHandler === 'function') {
 				val = self.variableHandler(T, current_variables);
 			}
-			if (typeof val === 'string') {
+			if (typeof val === 'string' && !allow_strings) {
 				val = self.parse(val, current_variables);
 			} else if (val === undefined) {
 				found_unassigned_variable = true;
+			} else if (typeof val == 'function') {
+				val = val();
 			}
 			return val||0;
 	
@@ -333,6 +357,20 @@ function Molang() {
 	
 		} else if (T instanceof Allocation) {
 			return current_variables[T.name] = iterateExp(T.value);
+	
+		} else if (T instanceof QueryFunction) {
+
+			let args = T.args.map(arg => iterateExp(arg));
+			if (typeof current_variables[T.query] == 'function') {
+				return current_variables[T.query](...args);
+			}
+			if (typeof self.global_variables[T.query] == 'function') {
+				return self.global_variables[T.query](...args);
+			}
+			if (typeof self.variableHandler === 'function') {
+				val = self.variableHandler(T.query, current_variables, args);
+			}
+			return 0;
 	
 		} else if (T instanceof Comp) {
 
@@ -352,8 +390,8 @@ function Molang() {
 				case 14:	return iterateExp(T.a) <= iterateExp(T.b) ? 1 : 0;
 				case 15:	return iterateExp(T.a) >  iterateExp(T.b) ? 1 : 0;
 				case 16:	return iterateExp(T.a) >= iterateExp(T.b) ? 1 : 0;
-				case 17:	return iterateExp(T.a) === iterateExp(T.b) ? 1 : 0;
-				case 18:	return iterateExp(T.a) !== iterateExp(T.b) ? 1 : 0;
+				case 17:	return compareValues(T.a, T.b) ? 1 : 0;
+				case 18:	return compareValues(T.a, T.b) ? 0 : 1;
 				case 19:	var variable = iterateExp(T.a);
 							return found_unassigned_variable ? iterateExp(T.b) : variable;
 

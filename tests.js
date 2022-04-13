@@ -16,6 +16,8 @@ test('Basic', '1+1', 2)
 
 test('Order of operation', '1 + 1 * 2', 3)
 
+test('Order of division', '12 / 2 / 2', 3)
+
 test('Binary', 'true ? 10', 10)
 
 test('Ternary', 'false ? 5 : 10', 10)
@@ -44,19 +46,23 @@ test('Null Coalescing', '(variable.non_existent ?? 3) + (variable.existent ?? 9)
 
 test('Remember', 'variable.b * 2', 4)
 
+test('Query Arguments', 'q.multiply(4, 6-2) + 1', 17, {'query.multiply': (a, b) => (a * b)});
+
+test('Strings', `(query.item_x == 'diamond')*2 + (query.item_x == 'coal')*3`, 2, {'query.item_x': `'diamond'`});
+
 MolangParser.resetVariables();
 test('Reset Variables', 'variable.b * 2', 0)
 
 MolangParser.cache_enabled = false;
 console.time(chalk.cyanBright('Raw Performance'));
 for (var i = 0; i < 100000; i++) {
-    MolangParser.parse('false ? 5 : (10 * math.pow(2+2, 2))')
+    MolangParser.parse('false ? 5 : (v.test * math.pow(2+2, 2))', {'variable.test': 5})
 }
 console.timeEnd(chalk.cyanBright('Raw Performance'))
 
 MolangParser.cache_enabled = true;
 console.time(chalk.cyanBright('Cached Performance'));
 for (var i = 0; i < 100000; i++) {
-    MolangParser.parse('false ? 5 : (10 * math.pow(2+2, 2))')
+    MolangParser.parse('false ? 5 : (v.test * math.pow(2+2, 2))', {'variable.test': 5})
 }
 console.timeEnd(chalk.cyanBright('Cached Performance'))

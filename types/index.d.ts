@@ -21,5 +21,5 @@ export default class MolangParser {
 	/**
 	 * Custom handler for unrecognized variables
 	 */
-	variableHandler: null | ((key: string, variables: object) => number)
+	variableHandler: null | ((key: string, variables: object, arguments?: []) => number)
 }
