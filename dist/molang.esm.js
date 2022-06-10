@@ -190,7 +190,7 @@ function Molang() {
 			testOp(s, '!=', 18) ||
 	
 			testOp(s, '+', 1, true) ||
-			testMinus(s, '-', 2, true) ||
+			testMinus(s, '-', 2) ||
 			testOp(s, '*', 3) ||
 			testOp(s, '/', 4, true) ||
 			testNegator(s, '!')
@@ -280,13 +280,13 @@ function Molang() {
 			return new Comp(operator, split[0], split[1])
 		}
 	}
-	function testMinus(s, char, operator, inverse) {
+	function testMinus(s, char, operator) {
 	
-		var split = splitString(s, char, inverse);
+		var split = splitString(s, char, true);
 		if (split) {
 			if (split[0].length === 0) {
 				return new Comp(operator, 0, split[1])
-			} else if ('+*/<>=|&?:'.includes(split[0].substr(-1)) === false) {
+			} else {
 				return new Comp(operator, split[0], split[1])
 			}
 		}
@@ -308,7 +308,7 @@ function Molang() {
 				level -= direction;
 			} else if (level === 0) {
 				var letters = s.substr(i, char.length);
-				if (is_string && letters === char) {
+				if (is_string && letters === char && (char !== '-' || '+*/<>=|&?:'.includes(s[i-1]) === false)) {
 					return [
 						s.substr(0, i),
 						s.substr(i+char.length)
@@ -340,7 +340,10 @@ function Molang() {
 		} else if (typeof T === 'string') {
 			if (Constants[T] != undefined) return Constants[T];
 
-			var val = self.variables[T];
+			var val = temp_variables[T];
+			if (val === undefined) {
+				val = self.variables[T];
+			}
 			if (val === undefined) {
 				val = self.global_variables[T];
 			}
@@ -367,6 +370,9 @@ function Molang() {
 			let args = T.args.map(arg => iterateExp(arg));
 			if (typeof self.variables[T.query] == 'function') {
 				return self.variables[T.query](...args);
+			}
+			if (typeof temp_variables[T.query] == 'function') {
+				return temp_variables[T.query](...args);
 			}
 			if (typeof self.global_variables[T.query] == 'function') {
 				return self.global_variables[T.query](...args);
@@ -443,11 +449,12 @@ function Molang() {
 		}
 		if (typeof input !== 'string') return 0;
 		input = trimInput(input);
-	
+		
+		let expression;
 		if (this.cache_enabled && cached[input]) {
-			var expression = cached[input];
+			expression = cached[input];
 		} else {
-			var expression = new Expression(input);
+			expression = new Expression(input);
 			if (this.cache_enabled) {
 				cached[input] = expression;
 			}
