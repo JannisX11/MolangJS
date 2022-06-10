@@ -76,11 +76,12 @@ function Molang() {
 	this.global_variables = {};
 	this.cache_enabled = true;
 	this.use_radians = false;
+	this.variables = {};
 
 	this.variableHandler = null;
 
+	let temp_variables = {};
 	let cached = {};
-	let current_variables = {};
 	let found_unassigned_variable = false;
 
 
@@ -114,18 +115,21 @@ function Molang() {
 	function calculate(expression, variables) {
 		if (variables) {
 			for (var key in variables) {
-				current_variables[key] = variables[key];
+				temp_variables[key] = variables[key];
 			}
 		}
-		var i = 0;
-		for (var line of expression.lines) {
+		let i = 0;
+		let end_result = 0;
+		for (let line of expression.lines) {
 			let result = iterateExp(line);
 			i++;
 			if (i == expression.lines.length || (line instanceof Statement && line.type === 'return')) {
-				return result;
+				end_result = result;
+				break;
 			}
 		}
-		return 0;
+		temp_variables = {};
+		return end_result;
 	}
 	
 	function iterateString(s) {
@@ -338,15 +342,15 @@ function Molang() {
 		} else if (typeof T === 'string') {
 			if (Constants[T] != undefined) return Constants[T];
 
-			var val = current_variables[T];
+			var val = self.variables[T];
 			if (val === undefined) {
 				val = self.global_variables[T];
 			}
 			if (val === undefined && typeof self.variableHandler === 'function') {
-				val = self.variableHandler(T, current_variables);
+				val = self.variableHandler(T, self.variables);
 			}
 			if (typeof val === 'string' && !allow_strings) {
-				val = self.parse(val, current_variables);
+				val = self.parse(val, self.variables);
 			} else if (val === undefined) {
 				found_unassigned_variable = true;
 			} else if (typeof val == 'function') {
@@ -358,19 +362,19 @@ function Molang() {
 			return iterateExp(T.value);
 	
 		} else if (T instanceof Allocation) {
-			return current_variables[T.name] = iterateExp(T.value);
+			return self.variables[T.name] = iterateExp(T.value);
 	
 		} else if (T instanceof QueryFunction) {
 
 			let args = T.args.map(arg => iterateExp(arg));
-			if (typeof current_variables[T.query] == 'function') {
-				return current_variables[T.query](...args);
+			if (typeof self.variables[T.query] == 'function') {
+				return self.variables[T.query](...args);
 			}
 			if (typeof self.global_variables[T.query] == 'function') {
 				return self.global_variables[T.query](...args);
 			}
 			if (typeof self.variableHandler === 'function') {
-				val = self.variableHandler(T.query, current_variables, args);
+				val = self.variableHandler(T.query, self.variables, args);
 			}
 			return 0;
 	
@@ -453,7 +457,7 @@ function Molang() {
 		return calculate(expression, variables);
 	};
 	this.resetVariables = () => {
-		current_variables = {};
+		self.variables = {};
 	};
 }
 
