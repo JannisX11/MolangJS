@@ -113,6 +113,12 @@ function Molang() {
 	let angleFactor = () => this.use_radians ? 1 : (Math.PI/180);
 
 	function calculate(expression, variables) {
+		for (var key in self.global_variables) {
+			temp_variables[key] = self.global_variables[key];
+		}
+		for (var key in self.variables) {
+			temp_variables[key] = self.variables[key];
+		}
 		if (variables) {
 			for (var key in variables) {
 				temp_variables[key] = variables[key];
@@ -336,24 +342,18 @@ function Molang() {
 	}
 	function iterateExp(T, allow_strings) {
 		found_unassigned_variable = false;
-
+		
 		if (typeof T === 'number') {
-			return T
+			return T;
 		} else if (typeof T === 'string') {
-			if (Constants[T] != undefined) return Constants[T];
+			if (Constants[T] !== undefined) return Constants[T];
 
 			var val = temp_variables[T];
-			if (val === undefined) {
-				val = self.variables[T];
-			}
-			if (val === undefined) {
-				val = self.global_variables[T];
-			}
 			if (val === undefined && typeof self.variableHandler === 'function') {
-				val = self.variableHandler(T, self.variables);
+				val = self.variableHandler(T, temp_variables);
 			}
 			if (typeof val === 'string' && !allow_strings) {
-				val = self.parse(val, self.variables);
+				val = self.parse(val, temp_variables);
 			} else if (val === undefined) {
 				found_unassigned_variable = true;
 			} else if (typeof val == 'function') {
@@ -365,22 +365,16 @@ function Molang() {
 			return iterateExp(T.value);
 	
 		} else if (T instanceof Allocation) {
-			return self.variables[T.name] = iterateExp(T.value);
+			return temp_variables[T.name] = self.variables[T.name] = iterateExp(T.value);
 	
 		} else if (T instanceof QueryFunction) {
 
 			let args = T.args.map(arg => iterateExp(arg));
-			if (typeof self.variables[T.query] == 'function') {
-				return self.variables[T.query](...args);
-			}
 			if (typeof temp_variables[T.query] == 'function') {
 				return temp_variables[T.query](...args);
 			}
-			if (typeof self.global_variables[T.query] == 'function') {
-				return self.global_variables[T.query](...args);
-			}
 			if (typeof self.variableHandler === 'function') {
-				val = self.variableHandler(T.query, self.variables, args);
+				val = self.variableHandler(T.query, temp_variables, args);
 			}
 			return 0;
 	
