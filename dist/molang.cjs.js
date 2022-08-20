@@ -445,6 +445,10 @@ function Molang() {
 		}
 		if (typeof input !== 'string') return 0;
 		input = trimInput(input);
+		if (input === '') return 0;
+		if (input.length < 9 && !isNaN(input) && input) {
+			return parseFloat(input);
+		}
 		
 		let expression;
 		if (this.cache_enabled && cached[input]) {
