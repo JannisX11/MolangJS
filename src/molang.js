@@ -38,9 +38,19 @@ function Molang() {
 
 	// Tree Types
 	function Expression(string) {
-		this.lines = string.replace(/\s/g, '').split(';').map(line => {
-			return iterateString(line);
-		});
+		let input = string.replace(/\s/g, '');
+		if (!input.includes(';')) {
+			this.lines = [iterateString(input)];
+		} else {
+			this.lines = [];
+			let input_lines = input.split(';');
+			for (let line of input_lines) {
+				if (!line) continue;
+				let result = iterateString(line);
+				this.lines.push(result);
+				if (result instanceof Statement && result.type === 'return') break;
+			}
+		}
 	}
 	function Comp(operator, a, b, c) {
 		this.operator = operator;
@@ -75,15 +85,14 @@ function Molang() {
 				temp_variables[key] = variables[key];
 			}
 		}
-		let i = 0;
+		if (expression.lines.length === 1) {
+			let result = iterateExp(expression.lines[0]);
+			temp_variables = {};
+			return result;
+		}
 		let end_result = 0;
 		for (let line of expression.lines) {
-			let result = iterateExp(line);
-			i++;
-			if (i == expression.lines.length || (line instanceof Statement && line.type === 'return')) {
-				end_result = result;
-				break;
-			}
+			end_result = iterateExp(line);
 		}
 		temp_variables = {};
 		return end_result;
@@ -94,27 +103,24 @@ function Molang() {
 		if (!s) return 0;
 		if (!isNaN(s)) return parseFloat(s);
 	
-		//s = s.replace(/\s/g, '')
-	
 		while (canTrimParentheses(s)) {
 			s = s.substr(1, s.length-2);
 		}
 	
 		//Statement
-		let match = s.length > 5 && s.startsWith('return')
-		if (match) {
+		if (s.startsWith('return')) {
 			return new Statement('return', s.substr(6))
 		}
 
 		if (s.substring(1, 2) == '.') {
 			let char = s.substring(0, 1);
-			if (char == 'q') s = 'query' + s.substring(1);
-			if (char == 'v') s = 'variable' + s.substring(1);
-			if (char == 't') s = 'temp' + s.substring(1);
-			if (char == 'c') s = 'context' + s.substring(1);
+			if (char === 'q') s = 'query' + s.substring(1);
+			if (char === 'v') s = 'variable' + s.substring(1);
+			if (char === 't') s = 'temp' + s.substring(1);
+			if (char === 'c') s = 'context' + s.substring(1);
 		}
 
-		if (s.match(/[^a-z0-9\.]/)) {
+		if (/[^a-z0-9\.]/.test(s)) {
 	
 			//allocation
 			let match = s.length > 4 && s.match(/(temp|variable)\.\w+=/);
@@ -201,7 +207,6 @@ function Molang() {
 					case 'die_roll_integer':return new Comp(123, params[0], params[1], params[2]);
 					case 'hermite_blend': 	return new Comp(124, params[0]);
 					case 'random_integer': 	return new Comp(125, params[0], params[1], params[2]);
-					
 				}
 			}
 		}
@@ -259,6 +264,9 @@ function Molang() {
 			return new Comp(5, s.substr(1), 0)
 		}
 	}
+	const BracketOpen = '(';
+	const BracketClose = ')';
+	const Minus = '-';
 	function splitString(s, char, inverse) {
 		if (!s.includes(char)) return;
 		let direction = inverse ? -1 : 1;
@@ -266,13 +274,13 @@ function Molang() {
 		let level = 0;
 		let is_string = typeof char === 'string'
 		while (inverse ? i >= 0 : i < s.length) {
-			if (s[i] === '(') {
+			if (s[i] === BracketOpen) {
 				level += direction;
-			} else if (s[i] === ')') {
+			} else if (s[i] === BracketClose) {
 				level -= direction;
 			} else if (level === 0) {
 				let letters = s.substr(i, char.length)
-				if (is_string && letters === char && (char !== '-' || '+*/<>=|&?:'.includes(s[i-1]) === false)) {
+				if (is_string && letters === char && (char !== Minus || '+*/<>=|&?:'.includes(s[i-1]) === false)) {
 					return [
 						s.substr(0, i),
 						s.substr(i+char.length)
@@ -401,16 +409,14 @@ function Molang() {
 		}
 		if (typeof input !== 'string') return 0;
 		input = trimInput(input);
-		if (input === '') return 0;
-		if (input.length < 9 && !isNaN(input) && input) {
+		if (input.length === 0) return 0;
+		if (input.length < 9 && !isNaN(input)) {
 			return parseFloat(input);
 		}
 		
-		let expression;
-		if (this.cache_enabled && cached[input]) {
-			expression = cached[input];
-		} else {
-			expression = new Expression(input)
+		let expression = this.cache_enabled && cached[input];
+		if (!expression) {
+			expression = new Expression(input);
 			if (this.cache_enabled) {
 				cached[input] = expression;
 			}
