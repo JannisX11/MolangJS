@@ -56,9 +56,6 @@ var MathUtil = {
 // Util
 function trimInput(string) {
 	string = string.toLowerCase().trim();
-	if (string.includes(';')) {
-		string = string.replace(/;\s+/g, ';').replace(/;\s*$/, '');
-	}
 	return string;
 }
 const Constants = {
@@ -145,6 +142,7 @@ function Molang() {
 		return end_result;
 	}
 	
+	let special_char_regex = /[^a-z0-9\.]/;
 	function iterateString(s) {
 		//Iterates through string, returns float, string or comp;
 		if (!s) return 0;
@@ -167,12 +165,12 @@ function Molang() {
 			if (char === 'c') s = 'context' + s.substring(1);
 		}
 
-		if (/[^a-z0-9\.]/.test(s)) {
+		if (special_char_regex.test(s)) {
 	
 			//allocation
 			let match = s.length > 4 && s.match(/(temp|variable)\.\w+=/);
 			if (match && s[match.index + match[0].length] !== '=') {
-				let name = match[0].replace(/=$/, '');
+				let name = match[0].substring(0, match[0].length-1);
 				let value = s.substr(match.index + match[0].length);
 				return new Allocation(name, value)
 			}
@@ -319,28 +317,18 @@ function Molang() {
 		let direction = inverse ? -1 : 1;
 		let i = inverse ? s.length-1 : 0;
 		let level = 0;
-		let is_string = typeof char === 'string';
 		while (inverse ? i >= 0 : i < s.length) {
 			if (s[i] === BracketOpen) {
 				level += direction;
 			} else if (s[i] === BracketClose) {
 				level -= direction;
 			} else if (level === 0) {
-				let letters = s.substr(i, char.length);
-				if (is_string && letters === char && (char !== Minus || '+*/<>=|&?:'.includes(s[i-1]) === false)) {
+				let letters = char.length === 1 ? s[i] : s.substr(i, char.length);
+				if (letters === char && (char !== Minus || '+*/<>=|&?:'.includes(s[i-1]) === false)) {
 					return [
 						s.substr(0, i),
 						s.substr(i+char.length)
 					];
-				} else if (!is_string) {
-					for (let xi = 0; xi < char.length; xi++) {
-						if (char[xi] === letters) {
-							return [
-								s.substr(0, i),
-								s.substr(i+char[xi].length)
-							];
-						}
-					}
 				}
 			}
 			i += direction;
