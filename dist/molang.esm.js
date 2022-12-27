@@ -44,7 +44,19 @@ var MathUtil = {
 		} else {
 			return a + lerp * diff;
 		}
-	}
+	},
+	inRange(value, min, max) {
+		return (value <= max && value >= min) ? 1 : 0;
+	},
+	all(value, ...to_compare) {
+		return (to_compare.findIndex(c => c !== value) === -1) ? 1 : 0;
+	},
+	any(value, ...to_compare) {
+		return to_compare.findIndex(c => c == value) >= 0 ? 1 : 0;
+	},
+	approxEq(value, ...to_compare) {
+		return (to_compare.findIndex(c => Math.abs(value - c) > 0.0000001) === -1) ? 1 : 0;
+	},
 };
 
 /**
@@ -52,16 +64,6 @@ var MathUtil = {
  * License: MIT
  */
 
-
-// Util
-function trimInput(string) {
-	string = string.toLowerCase().trim();
-	return string;
-}
-const Constants = {
-	'true': 1,
-	'false': 0,
-};
 
 
 function Molang() {
@@ -76,14 +78,17 @@ function Molang() {
 	this.variableHandler = null;
 
 	let temp_variables = {};
-	let cached = {};
 	let found_unassigned_variable = false;
 
+	let cached = {};
+	function addToCache(input, expression) {
+		cached[input] = expression;
+	}
 
 	// Tree Types
 	function Expression(string) {
 		let input = string.replace(/\s/g, '');
-		if (!input.includes(';')) {
+		if (input.indexOf(';') === -1) {
 			this.lines = [iterateString(input)];
 		} else {
 			this.lines = [];
@@ -92,7 +97,7 @@ function Molang() {
 				if (!line) continue;
 				let result = iterateString(line);
 				this.lines.push(result);
-				if (result instanceof Statement && result.type === 'return') break;
+				if (result instanceof ReturnStatement) break;
 			}
 		}
 	}
@@ -110,12 +115,16 @@ function Molang() {
 		this.value = iterateString(value);
 		this.name = name;
 	}
-	function Statement(type, value) {
+	function ReturnStatement(value) {
 		this.value = iterateString(value);
-		this.type = type;
 	}
 
 	let angleFactor = () => this.use_radians ? 1 : (Math.PI/180);
+
+	let string_num_regex = /^-?\d+(\.\d+)?$/;
+	function isStringNumber(string) {
+		return string_num_regex.test(string);
+	}
 
 	function calculate(expression, variables) {
 		for (let key in self.global_variables) {
@@ -142,33 +151,46 @@ function Molang() {
 		return end_result;
 	}
 	
-	let special_char_regex = /[^a-z0-9\.]/;
+	const special_char_regex = /[^a-z0-9\.]/;
+	const allocation_regex = /(temp|variable)\.\w+=/;
+	const TRUE = 'true';
+	const FALSE = 'false';
+	const RETURN = 'return';
+	const POINT = '.';
 	function iterateString(s) {
 		//Iterates through string, returns float, string or comp;
 		if (!s) return 0;
-		if (!isNaN(s)) return parseFloat(s);
+		if (isStringNumber(s)) return parseFloat(s);
 	
 		while (canTrimParentheses(s)) {
 			s = s.substr(1, s.length-2);
 		}
 	
-		//Statement
-		if (s.startsWith('return')) {
-			return new Statement('return', s.substr(6))
+		//Return Statement
+		if (s.startsWith(RETURN)) {
+			return new ReturnStatement(s.substr(6))
 		}
 
-		if (s.substring(1, 2) == '.') {
+		// Bool
+		switch (s) {
+			case TRUE: return 1;
+			case FALSE: return 0;
+		}
+
+		if (s.substring(1, 2) === POINT) {
 			let char = s.substring(0, 1);
-			if (char === 'q') s = 'query' + s.substring(1);
-			if (char === 'v') s = 'variable' + s.substring(1);
-			if (char === 't') s = 'temp' + s.substring(1);
-			if (char === 'c') s = 'context' + s.substring(1);
+			switch (char) {
+				case 'q': s = 'query' + s.substring(1); break;
+				case 'v': s = 'variable' + s.substring(1); break;
+				case 't': s = 'temp' + s.substring(1); break;
+				case 'c': s = 'context' + s.substring(1); break;
+			}
 		}
 
 		if (special_char_regex.test(s)) {
 	
 			//allocation
-			let match = s.length > 4 && s.match(/(temp|variable)\.\w+=/);
+			let match = s.length > 4 && s.match(allocation_regex);
 			if (match && s[match.index + match[0].length] !== '=') {
 				let name = match[0].substring(0, match[0].length-1);
 				let value = s.substr(match.index + match[0].length);
@@ -207,13 +229,13 @@ function Molang() {
 				testOp(s, '/', 4, true) ||
 				testNegator(s)
 			);
-			if (comp) return comp;
+			if (comp instanceof Comp) return comp;
 		
-			if (s.substr(0, 5) === 'math.') {
-				if (s.substr(0, 7) === 'math.pi') {
+			if (s.startsWith('math.')) {
+				if (s === 'math.pi') {
 					return Math.PI
 				}
-				let begin = s.search(/\(/);
+				let begin = s.indexOf('(');
 				let operator = s.substr(5, begin-5);
 				let inner = s.substr(begin+1, s.length-begin-2);
 				let params = splitString(inner, ',')||[inner];
@@ -256,7 +278,7 @@ function Molang() {
 			}
 		}
 
-		let split = s.match(/[a-zA-Z0-9._]{2,}/g);
+		let split = s.match(/[a-z0-9._]{2,}/g);
 		if (split && split.length === 1 && split[0].length >= s.length-2) {
 			return s;
 		} else if (s.includes('(') && s[s.length-1] == ')') {
@@ -288,14 +310,14 @@ function Molang() {
 	}
 	function testOp(s, char, operator, inverse) {
 	
-		let split = splitString(s, char, inverse);
+		let split = inverse ? splitStringReverse(s, char) : splitString(s, char);
 		if (split) {
 			return new Comp(operator, split[0], split[1])
 		}
 	}
 	function testMinus(s, char, operator) {
 	
-		let split = splitString(s, char, true);
+		let split = splitStringReverse(s, char);
 		if (split) {
 			if (split[0].length === 0) {
 				return new Comp(operator, 0, split[1])
@@ -312,26 +334,45 @@ function Molang() {
 	const BracketOpen = '(';
 	const BracketClose = ')';
 	const Minus = '-';
-	function splitString(s, char, inverse) {
-		if (!s.includes(char)) return;
-		let direction = inverse ? -1 : 1;
-		let i = inverse ? s.length-1 : 0;
+	function splitString(s, char) {
+		if (s.indexOf(char) === -1) return;
 		let level = 0;
-		while (inverse ? i >= 0 : i < s.length) {
-			if (s[i] === BracketOpen) {
-				level += direction;
-			} else if (s[i] === BracketClose) {
-				level -= direction;
-			} else if (level === 0) {
-				let letters = char.length === 1 ? s[i] : s.substr(i, char.length);
-				if (letters === char && (char !== Minus || '+*/<>=|&?:'.includes(s[i-1]) === false)) {
-					return [
-						s.substr(0, i),
-						s.substr(i+char.length)
-					];
-				}
+		for (let i = 0; i < s.length; i++) {
+			switch (s[i]) {
+				case BracketOpen: level++; break;
+				case BracketClose: level--; break;
+				default:
+					if (level === 0 && char[0] === s[i] && (char.length === 1 || char === s.substr(i, char.length))) {
+						return [
+							s.substr(0, i),
+							s.substr(i+char.length)
+						];
+					}
+					break;
 			}
-			i += direction;
+		}
+	}
+	function splitStringReverse(s, char) {
+		if (s.indexOf(char) === -1) return;
+		let i = s.length-1;
+		let level = 0;
+		while (i >= 0) {
+			switch (s[i]) {
+				case BracketOpen: level--; break;
+				case BracketClose: level++; break;
+				default:
+					if (level === 0 && char[0] === s[i] &&
+						(char.length === 1 || char === s.substr(i, char.length)) &&
+						(char !== Minus || '+*/<>=|&?:'.includes(s[i-1]) === false)
+					) {
+						return [
+							s.substr(0, i),
+							s.substr(i+char.length)
+						];
+					}
+					break;
+			}
+			i--;
 		}
 	}
 	function compareValues(a, b) {
@@ -340,8 +381,6 @@ function Molang() {
 		return a === b;
 	}
 	function iterateExp(T, allow_strings) {
-		found_unassigned_variable = false;
-		
 		if (typeof T === 'number') {
 			return T;
 		} else if (T instanceof Comp) {
@@ -364,7 +403,8 @@ function Molang() {
 				case 16:	return iterateExp(T.a) >= iterateExp(T.b) ? 1 : 0;
 				case 17:	return compareValues(T.a, T.b) ? 1 : 0;
 				case 18:	return compareValues(T.a, T.b) ? 0 : 1;
-				case 19:	let variable = iterateExp(T.a);
+				case 19:	found_unassigned_variable = false;
+							let variable = iterateExp(T.a);
 							return found_unassigned_variable ? iterateExp(T.b) : variable;
 
 				//Math
@@ -401,22 +441,22 @@ function Molang() {
 				case 125:	return MathUtil.randomInt(iterateExp(T.a), iterateExp(T.b));
 			}
 		} else if (typeof T === 'string') {
-			if (Constants[T] !== undefined) return Constants[T];
-
 			let val = temp_variables[T];
 			if (val === undefined && typeof self.variableHandler === 'function') {
 				val = self.variableHandler(T, temp_variables);
 			}
-			if (typeof val === 'string' && !allow_strings) {
-				val = self.parse(val, temp_variables);
+			if (typeof val === 'number') {
+				return val;
+			} else if (typeof val === 'string' && !allow_strings) {
+				return self.parse(val, temp_variables) || 0;
 			} else if (val === undefined) {
 				found_unassigned_variable = true;
-			} else if (typeof val == 'function') {
-				val = val();
+			} else if (typeof val === 'function') {
+				return val() || 0;
 			}
-			return val||0;
+			return val || 0;
 	
-		} else if (T instanceof Statement) {
+		} else if (T instanceof ReturnStatement) {
 			return iterateExp(T.value);
 	
 		} else if (T instanceof Allocation) {
@@ -425,11 +465,17 @@ function Molang() {
 		} else if (T instanceof QueryFunction) {
 
 			let args = T.args.map(arg => iterateExp(arg));
+			switch (T.query) {
+				case 'query.in_range': 	return MathUtil.inRange(...args);
+				case 'query.all': 		return MathUtil.all(...args);
+				case 'query.any': 		return MathUtil.any(...args);
+				case 'query.approx_eq': return MathUtil.approxEq(...args);
+			}
 			if (typeof temp_variables[T.query] == 'function') {
 				return temp_variables[T.query](...args);
 			}
 			if (typeof self.variableHandler === 'function') {
-				val = self.variableHandler(T.query, temp_variables, args);
+				return self.variableHandler(T.query, temp_variables, args);
 			}
 			return 0;
 	
@@ -442,10 +488,9 @@ function Molang() {
 		if (typeof input === 'number') {
 			return isNaN(input) ? 0 : input
 		}
-		if (typeof input !== 'string') return 0;
-		input = trimInput(input);
-		if (input.length === 0) return 0;
-		if (input.length < 9 && !isNaN(input)) {
+		if (typeof input !== 'string' || input.length === 0) return 0;
+		input = input.toLowerCase().trim();
+		if (input.length < 9 && isStringNumber(input)) {
 			return parseFloat(input);
 		}
 		
@@ -453,7 +498,7 @@ function Molang() {
 		if (!expression) {
 			expression = new Expression(input);
 			if (this.cache_enabled) {
-				cached[input] = expression;
+				addToCache(input, expression);
 			}
 		}
 		return calculate(expression, variables);

@@ -50,6 +50,14 @@ test('Remember', 'variable.b * 2', 4)
 
 test('Query Arguments', 'q.multiply(4, 6-2) + 1', 17, {'query.multiply': (a, b) => (a * b)});
 
+test('Query In Range', 'q.in_range(1, 0, 2) && !query.in_range(55, 1, 5)', 1);
+
+test('Query All', 'q.all(2, 2, 2, 2, 2) && !query.all(6, 6, 1, 5, 6)', 1);
+
+test('Query Any', 'q.any(20, 2, 2, 20, 2) && !q.any(1, 2, 2)', 1);
+
+test('Query Approx Eq', 'q.approx_eq(2, 2.00000000002) && !q.approx_eq(2, 2, 3)', 1);
+
 test('Strings', `(query.item_x == 'diamond')*2 + (query.item_x == 'coal')*3`, 2, {'query.item_x': `'diamond'`});
 
 MolangParser.resetVariables();

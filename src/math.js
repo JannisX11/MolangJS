@@ -44,5 +44,17 @@ export default {
 		} else {
 			return a + lerp * diff;
 		}
-	}
+	},
+	inRange(value, min, max) {
+		return (value <= max && value >= min) ? 1 : 0;
+	},
+	all(value, ...to_compare) {
+		return (to_compare.findIndex(c => c !== value) === -1) ? 1 : 0;
+	},
+	any(value, ...to_compare) {
+		return to_compare.findIndex(c => c == value) >= 0 ? 1 : 0;
+	},
+	approxEq(value, ...to_compare) {
+		return (to_compare.findIndex(c => Math.abs(value - c) > 0.0000001) === -1) ? 1 : 0;
+	},
 }
