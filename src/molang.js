@@ -20,6 +20,7 @@ function Molang() {
 
 	let temp_variables = {};
 	let found_unassigned_variable = false;
+	let loop_status = 0;
 
 	let cached = {};
 	let cache_size = 0;
@@ -36,20 +37,18 @@ function Molang() {
 	}
 
 	// Tree Types
-	function Expression(string) {
-		let input = string.toLowerCase().replace(/\s/g, '');
-		if (input.indexOf(';') === -1) {
-			this.lines = [iterateString(input)];
-		} else {
-			this.lines = [];
-			let input_lines = input.split(';');
-			for (let line of input_lines) {
-				if (!line) continue;
-				let result = iterateString(line);
-				this.lines.push(result);
-				if (result instanceof ReturnStatement) break;
-			}
+	function Scope(lines) {
+		this.lines = [];
+		for (let line of lines) {
+			if (!line) continue;
+			let result = iterateString(line);
+			this.lines.push(result);
+			if (result instanceof ReturnStatement) break;
 		}
+	}
+	function Loop(iterations, body) {
+		this.iterations = iterateString(iterations);
+		this.body = iterateString(body);
 	}
 	function Comp(operator, a, b, c) {
 		this.operator = operator;
@@ -68,6 +67,8 @@ function Molang() {
 	function ReturnStatement(value) {
 		this.value = iterateString(value);
 	}
+	function BreakStatement() {}
+	function ContinueStatement() {}
 
 	let angleFactor = () => this.use_radians ? 1 : (Math.PI/180);
 
@@ -76,44 +77,26 @@ function Molang() {
 		return string_num_regex.test(string);
 	}
 
-	function calculate(expression, variables) {
-		for (let key in self.global_variables) {
-			temp_variables[key] = self.global_variables[key];
-		}
-		for (let key in self.variables) {
-			temp_variables[key] = self.variables[key];
-		}
-		if (variables) {
-			for (let key in variables) {
-				temp_variables[key] = variables[key];
-			}
-		}
-		if (expression.lines.length === 1) {
-			let result = iterateExp(expression.lines[0]);
-			temp_variables = {};
-			return result;
-		}
-		let end_result = 0;
-		for (let line of expression.lines) {
-			end_result = iterateExp(line);
-		}
-		temp_variables = {};
-		return end_result;
-	}
-	
 	const special_char_regex = /[^a-z0-9\.]/;
 	const allocation_regex = /(temp|variable)\.\w+=/;
 	const TRUE = 'true';
 	const FALSE = 'false';
 	const RETURN = 'return';
+	const BREAK = 'break';
+	const CONTINUE = 'continue';
 	const POINT = '.';
 	function iterateString(s) {
 		//Iterates through string, returns float, string or comp;
 		if (!s) return 0;
 		if (isStringNumber(s)) return parseFloat(s);
-	
-		while (canTrimParentheses(s)) {
+
+		while (canTrimBrackets(s)) {
 			s = s.substr(1, s.length-2);
+		}
+
+		let lines = splitString(s, ';', true);
+		if (lines) {
+			return new Scope(lines);
 		}
 	
 		//Return Statement
@@ -125,6 +108,8 @@ function Molang() {
 		switch (s) {
 			case TRUE: return 1;
 			case FALSE: return 0;
+			case BREAK: return new BreakStatement();
+			case CONTINUE: return new ContinueStatement();
 		}
 
 		if (s.substring(1, 2) === POINT) {
@@ -190,14 +175,8 @@ function Molang() {
 				let begin = s.indexOf('(');
 				let operator = s.substr(5, begin-5);
 				let inner = s.substr(begin+1, s.length-begin-2)
-				let params = splitString(inner, ',')||[inner];
-				if (params.length > 1) {
-					let last2 = splitString(params[1], ',')
-					if (last2 && last2.length > 1) {
-						params[1] = last2[0];
-						params[2] = last2[1];
-					}
-				}
+				let params = splitString(inner, ',', true);
+				if (!params) params = [inner];
 		
 				switch (operator) {
 					case 'abs': 			return new Comp(100, params[0]);
@@ -228,6 +207,13 @@ function Molang() {
 					case 'random_integer': 	return new Comp(125, params[0], params[1], params[2]);
 				}
 			}
+			if (s.startsWith('loop(')) {
+				let inner = s.substring(5, s.length-1);
+				let params = splitString(inner, ',', true);
+				if (params) {
+					return new Loop(...params)
+				}
+			}
 		}
 
 		let split = s.match(/[a-z0-9._]{2,}/g)
@@ -237,23 +223,20 @@ function Molang() {
 			let begin = s.search(/\(/);
 			let query_name = s.substr(0, begin);
 			let inner = s.substr(begin+1, s.length-begin-2)
-			let params = [inner];
-			let split_result;
-			while (split_result = splitString(params[params.length-1], ',')) {
-				params.splice(params.length-1, 1, ...split_result);
-			}
+			let params = splitString(inner, ',', true);
+			if (!params) params = [inner];
 			
 			return new QueryFunction(query_name, params);
 		}
 		return 0;
 	}
-	function canTrimParentheses(s) {
-		if (s.startsWith('(') && s.endsWith(')')) {
+	function canTrimBrackets(s) {
+		if ((s.startsWith(BracketOpen) && s.endsWith(BracketClose)) || (s.startsWith(CurlyBracketOpen) && s.endsWith(CurlyBracketClose))) {
 			let level = 0;
 			for (let i = 0; i < s.length-1; i++) {
 				switch (s[i]) {
-					case '(': level++; break;
-					case ')': level--; break;
+					case BracketOpen:  case CurlyBracketOpen:  level++; break;
+					case BracketClose: case CurlyBracketClose: level--; break;
 				}
 				if (level == 0) return false;
 			}
@@ -285,23 +268,32 @@ function Molang() {
 	}
 	const BracketOpen = '(';
 	const BracketClose = ')';
+	const CurlyBracketOpen = '{';
+	const CurlyBracketClose = '}';
 	const Minus = '-';
-	function splitString(s, char) {
+	function splitString(s, char, multiple = false) {
 		if (s.indexOf(char) === -1) return;
 		let level = 0;
+		let pieces;
+		let last_split = 0;
+		loop:
 		for (let i = 0; i < s.length; i++) {
 			switch (s[i]) {
-				case BracketOpen: level++; break;
-				case BracketClose: level--; break;
+				case BracketOpen: case CurlyBracketOpen: level++; break;
+				case BracketClose: case CurlyBracketClose: level--; break;
 				default:
 					if (level === 0 && char[0] === s[i] && (char.length === 1 || char === s.substr(i, char.length))) {
-						return [
-							s.substr(0, i),
-							s.substr(i+char.length)
-						];
+						let piece = s.substring(last_split, i);
+						if (!pieces) pieces = [];
+						pieces.push(piece);
+						last_split = i + char.length;
+						if (!multiple || s.substring(last_split).indexOf(char) === -1) break loop;
 					}
-					break;
 			}
+		}
+		if (pieces && pieces.length) {
+			pieces.push(s.substring(last_split));
+			return pieces;
 		}
 	}
 	function splitStringReverse(s, char) {
@@ -310,8 +302,8 @@ function Molang() {
 		let level = 0;
 		while (i >= 0) {
 			switch (s[i]) {
-				case BracketOpen: level--; break;
-				case BracketClose: level++; break;
+				case BracketOpen: case CurlyBracketOpen: level++; break;
+				case BracketClose: case CurlyBracketClose: level--; break;
 				default:
 					if (level === 0 && char[0] === s[i] &&
 						(char.length === 1 || char === s.substr(i, char.length)) &&
@@ -335,63 +327,6 @@ function Molang() {
 	function iterateExp(T, allow_strings) {
 		if (typeof T === 'number') {
 			return T;
-		} else if (T instanceof Comp) {
-
-			switch (T.operator) {
-				//Basic
-				case 1:		return iterateExp(T.a) + iterateExp(T.b);
-				case 2:		return iterateExp(T.a) - iterateExp(T.b);
-				case 3:		return iterateExp(T.a) * iterateExp(T.b);
-				case 4:		return iterateExp(T.a) / iterateExp(T.b);
-				case 5:		return iterateExp(T.a) == 0 ? 1 : 0;
-
-				//Logical
-				case 10:	return iterateExp(T.a) ?  iterateExp(T.b) : iterateExp(T.c);
-				case 11:	return iterateExp(T.a) && iterateExp(T.b) ? 1 : 0;
-				case 12:	return iterateExp(T.a) || iterateExp(T.b) ? 1 : 0;
-				case 13:	return iterateExp(T.a) <  iterateExp(T.b) ? 1 : 0;
-				case 14:	return iterateExp(T.a) <= iterateExp(T.b) ? 1 : 0;
-				case 15:	return iterateExp(T.a) >  iterateExp(T.b) ? 1 : 0;
-				case 16:	return iterateExp(T.a) >= iterateExp(T.b) ? 1 : 0;
-				case 17:	return compareValues(T.a, T.b) ? 1 : 0;
-				case 18:	return compareValues(T.a, T.b) ? 0 : 1;
-				case 19:	found_unassigned_variable = false;
-							let variable = iterateExp(T.a);
-							return found_unassigned_variable ? iterateExp(T.b) : variable;
-
-				//Math
-				case 100:	return Math.abs(iterateExp(T.a));
-				case 101:	return Math.sin(iterateExp(T.a) * angleFactor());
-				case 102:	return Math.cos(iterateExp(T.a) * angleFactor());
-				case 103:	return Math.exp(iterateExp(T.a));
-				case 104:	return Math.log(iterateExp(T.a));
-				case 105:	return Math.pow(iterateExp(T.a), iterateExp(T.b));
-				case 106:	return Math.sqrt(iterateExp(T.a));
-				case 107:	return MathUtil.random(iterateExp(T.a), iterateExp(T.b));
-				case 108:	return Math.ceil(iterateExp(T.a));
-				case 109:	return Math.round(iterateExp(T.a));
-				case 110:	return Math.trunc(iterateExp(T.a));
-				case 111:	return Math.floor(iterateExp(T.a));
-				case 112:	return iterateExp(T.a) % iterateExp(T.b);
-				case 113:	return Math.min(iterateExp(T.a), iterateExp(T.b));
-				case 114:	return Math.max(iterateExp(T.a), iterateExp(T.b));
-				case 115:	return MathUtil.clamp(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
-				//	Lerp
-				case 116:	return MathUtil.lerp(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
-				case 117:	return MathUtil.lerpRotate(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
-				// Inverse Trigonometry
-				case 118:	return Math.asin(iterateExp(T.a)) / angleFactor();
-				case 119:	return Math.acos(iterateExp(T.a)) / angleFactor();
-				case 120:	return Math.atan(iterateExp(T.a)) / angleFactor();
-				case 121:	return Math.atan2(iterateExp(T.a), iterateExp(T.b)) / angleFactor();
-				// Misc
-				case 122:	return MathUtil.dieRoll(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
-				case 123:	return MathUtil.dieRollInt(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
-				case 124:
-					let t = iterateExp(T.a);
-					return 3*Math.pow(t, 2) - 2*Math.pow(t, 3);
-				case 125:	return MathUtil.randomInt(iterateExp(T.a), iterateExp(T.b));
-			}
 		} else if (typeof T === 'string') {
 			let val = temp_variables[T];
 			if (val === undefined && typeof self.variableHandler === 'function') {
@@ -408,33 +343,153 @@ function Molang() {
 			}
 			return val || 0;
 	
-		} else if (T instanceof ReturnStatement) {
-			return iterateExp(T.value);
-	
-		} else if (T instanceof Allocation) {
-			return temp_variables[T.name] = self.variables[T.name] = iterateExp(T.value);
-	
-		} else if (T instanceof QueryFunction) {
+		}
+		switch (T.constructor) {
+			case Comp:
 
-			let args = T.args.map(arg => iterateExp(arg));
-			switch (T.query) {
-				case 'query.in_range': 	return MathUtil.inRange(...args);
-				case 'query.all': 		return MathUtil.all(...args);
-				case 'query.any': 		return MathUtil.any(...args);
-				case 'query.approx_eq': return MathUtil.approxEq(...args);
-			}
-			if (typeof temp_variables[T.query] == 'function') {
-				return temp_variables[T.query](...args);
-			}
-			if (typeof self.variableHandler === 'function') {
-				return self.variableHandler(T.query, temp_variables, args);
-			}
-			return 0;
-	
+				switch (T.operator) {
+					//Basic
+					case 1:		return iterateExp(T.a) + iterateExp(T.b);
+					case 2:		return iterateExp(T.a) - iterateExp(T.b);
+					case 3:		return iterateExp(T.a) * iterateExp(T.b);
+					case 4:		return iterateExp(T.a) / iterateExp(T.b);
+					case 5:		return iterateExp(T.a) == 0 ? 1 : 0;
+
+					//Logical
+					case 10:	return iterateExp(T.a) ?  iterateExp(T.b) : iterateExp(T.c);
+					case 11:	return iterateExp(T.a) && iterateExp(T.b) ? 1 : 0;
+					case 12:	return iterateExp(T.a) || iterateExp(T.b) ? 1 : 0;
+					case 13:	return iterateExp(T.a) <  iterateExp(T.b) ? 1 : 0;
+					case 14:	return iterateExp(T.a) <= iterateExp(T.b) ? 1 : 0;
+					case 15:	return iterateExp(T.a) >  iterateExp(T.b) ? 1 : 0;
+					case 16:	return iterateExp(T.a) >= iterateExp(T.b) ? 1 : 0;
+					case 17:	return compareValues(T.a, T.b) ? 1 : 0;
+					case 18:	return compareValues(T.a, T.b) ? 0 : 1;
+					case 19:	found_unassigned_variable = false;
+								let variable = iterateExp(T.a);
+								return found_unassigned_variable ? iterateExp(T.b) : variable;
+
+					//Math
+					case 100:	return Math.abs(iterateExp(T.a));
+					case 101:	return Math.sin(iterateExp(T.a) * angleFactor());
+					case 102:	return Math.cos(iterateExp(T.a) * angleFactor());
+					case 103:	return Math.exp(iterateExp(T.a));
+					case 104:	return Math.log(iterateExp(T.a));
+					case 105:	return Math.pow(iterateExp(T.a), iterateExp(T.b));
+					case 106:	return Math.sqrt(iterateExp(T.a));
+					case 107:	return MathUtil.random(iterateExp(T.a), iterateExp(T.b));
+					case 108:	return Math.ceil(iterateExp(T.a));
+					case 109:	return Math.round(iterateExp(T.a));
+					case 110:	return Math.trunc(iterateExp(T.a));
+					case 111:	return Math.floor(iterateExp(T.a));
+					case 112:	return iterateExp(T.a) % iterateExp(T.b);
+					case 113:	return Math.min(iterateExp(T.a), iterateExp(T.b));
+					case 114:	return Math.max(iterateExp(T.a), iterateExp(T.b));
+					case 115:	return MathUtil.clamp(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					//	Lerp
+					case 116:	return MathUtil.lerp(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					case 117:	return MathUtil.lerpRotate(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					// Inverse Trigonometry
+					case 118:	return Math.asin(iterateExp(T.a)) / angleFactor();
+					case 119:	return Math.acos(iterateExp(T.a)) / angleFactor();
+					case 120:	return Math.atan(iterateExp(T.a)) / angleFactor();
+					case 121:	return Math.atan2(iterateExp(T.a), iterateExp(T.b)) / angleFactor();
+					// Misc
+					case 122:	return MathUtil.dieRoll(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					case 123:	return MathUtil.dieRollInt(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					case 124:
+						let t = iterateExp(T.a);
+						return 3*Math.pow(t, 2) - 2*Math.pow(t, 3);
+					case 125:	return MathUtil.randomInt(iterateExp(T.a), iterateExp(T.b));
+				}
+				break;
+
+			case ReturnStatement:
+				loop_status = 1;
+				return iterateExp(T.value);
+		
+			case Allocation:
+				return temp_variables[T.name] = self.variables[T.name] = iterateExp(T.value);
+		
+			case QueryFunction:
+
+				let args = T.args.map(arg => iterateExp(arg));
+				switch (T.query) {
+					case 'query.in_range': 	return MathUtil.inRange(...args);
+					case 'query.all': 		return MathUtil.all(...args);
+					case 'query.any': 		return MathUtil.any(...args);
+					case 'query.approx_eq': return MathUtil.approxEq(...args);
+				}
+				if (typeof temp_variables[T.query] == 'function') {
+					return temp_variables[T.query](...args);
+				}
+				if (typeof self.variableHandler === 'function') {
+					return self.variableHandler(T.query, temp_variables, args);
+				}
+				return 0;
+		
+			case Scope:
+				loop_status = 0;
+				let return_value = 0;
+				for (let line of T.lines) {
+					return_value = iterateExp(line);
+					if (loop_status > 0) {
+						break;
+					}
+				}
+				return return_value;
+
+			case Loop:
+				let return_value2 = 0;
+				let iterations = MathUtil.clamp(iterateExp(T.iterations), 0, 1024);
+				for (let i = 0; i < iterations; i++) {
+					let result = iterateExp(T.body);
+					if (loop_status === 2) {
+						loop_status = 0;
+						break;
+					}
+					if (loop_status === 3) {
+						loop_status = 0;
+						continue;
+					}
+					return_value2 = result;
+					if (loop_status === 1) break;
+				}
+				return return_value2;
+
+			case BreakStatement:
+				loop_status = 2;
+				return 0;
+
+			case ContinueStatement:
+				loop_status = 3;
+				return 0;
 		}
 		return 0;
 	}
 
+	function calculate(expression, variables) {
+		for (let key in self.global_variables) {
+			temp_variables[key] = self.global_variables[key];
+		}
+		for (let key in self.variables) {
+			temp_variables[key] = self.variables[key];
+		}
+		if (variables) {
+			for (let key in variables) {
+				temp_variables[key] = variables[key];
+			}
+		}
+		let end_result = iterateExp(expression);
+		temp_variables = {};
+		loop_status = 0;
+		return end_result;
+	}
+	
+	function parseInput(input) {
+		input = input.toLowerCase().replace(/\s/g, '');
+		return iterateString(input);
+	}
 
 	this.parse = (input, variables) => {
 		if (typeof input === 'number') {
@@ -447,7 +502,7 @@ function Molang() {
 		
 		let expression = this.cache_enabled && cached[input];
 		if (!expression) {
-			expression = new Expression(input);
+			expression = parseInput(input);
 			if (this.cache_enabled) {
 				addToCache(input, expression);
 			}

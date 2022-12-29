@@ -1,6 +1,6 @@
 {
   "name": "molangjs",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "description": "MoLang Parser for Javascript",
   "main": "dist/molang.cjs.js",
   "module": "dist/molang.esm.js",
