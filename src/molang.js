@@ -37,7 +37,7 @@ function Molang() {
 
 	// Tree Types
 	function Expression(string) {
-		let input = string.replace(/\s/g, '');
+		let input = string.toLowerCase().replace(/\s/g, '');
 		if (input.indexOf(';') === -1) {
 			this.lines = [iterateString(input)];
 		} else {
@@ -138,9 +138,11 @@ function Molang() {
 		}
 
 		if (special_char_regex.test(s)) {
+			let has_equal_sign = s.indexOf('=') !== -1;
+			let has_question_mark = s.indexOf('?') !== -1;
 	
 			//allocation
-			let match = s.length > 4 && s.match(allocation_regex);
+			let match = has_equal_sign && s.length > 4 && s.match(allocation_regex);
 			if (match && s[match.index + match[0].length] !== '=') {
 				let name = match[0].substring(0, match[0].length-1);
 				let value = s.substr(match.index + match[0].length);
@@ -148,11 +150,11 @@ function Molang() {
 			}
 
 			// Null Coalescing
-			let comp = testOp(s, '??', 19);
+			let comp = has_question_mark && testOp(s, '??', 19);
 			if (comp) return comp;
 		
 			//ternary
-			let split = splitString(s, '?');
+			let split = has_question_mark && splitString(s, '?');
 			if (split) {
 				let ab = splitString(split[1], ':');
 				if (ab && ab.length) {
@@ -166,12 +168,12 @@ function Molang() {
 			comp = (
 				testOp(s, '&&', 11) ||
 				testOp(s, '||', 12) ||
-				testOp(s, '<=', 14) ||
+				(has_equal_sign && testOp(s, '<=', 14)) ||
 				testOp(s, '<', 13) ||
-				testOp(s, '>=', 16) ||
+				(has_equal_sign && testOp(s, '>=', 16)) ||
 				testOp(s, '>', 15) ||
-				testOp(s, '==', 17) ||
-				testOp(s, '!=', 18) ||
+				(has_equal_sign && testOp(s, '==', 17)) ||
+				(has_equal_sign && testOp(s, '!=', 18)) ||
 		
 				testOp(s, '+', 1, true) ||
 				testMinus(s, '-', 2) ||
@@ -439,7 +441,6 @@ function Molang() {
 			return isNaN(input) ? 0 : input
 		}
 		if (typeof input !== 'string' || input.length === 0) return 0;
-		input = input.toLowerCase().trim();
 		if (input.length < 9 && isStringNumber(input)) {
 			return parseFloat(input);
 		}
