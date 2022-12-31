@@ -34,6 +34,8 @@ test('Order of operation', '1 + 1 * 2', 3)
 
 test('Order of operation 2', '18 - 2 * -0.5', 19)
 
+test('Float type notation', '10 * -0.2f', -2)
+
 test('Order of division', '12 / 2 / 2', 3)
 
 test('Binary', 'true ? 10', 10)

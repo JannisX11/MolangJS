@@ -84,8 +84,18 @@ function Molang() {
 	let loop_status = 0;
 
 	let cached = {};
+	let cache_size = 0;
 	function addToCache(input, expression) {
 		cached[input] = expression;
+		cache_size++;
+		if (cache_size > 400) {
+			// Free some cache
+			let keys = Object.keys(cached);
+			for (let i = 0; i < 10; i++) {
+				delete cached[keys[i]];
+			}
+			cache_size -= 10;
+		}
 	}
 
 	// Tree Types
@@ -124,13 +134,13 @@ function Molang() {
 
 	let angleFactor = () => this.use_radians ? 1 : (Math.PI/180);
 
-	let string_num_regex = /^-?\d+(\.\d+)?$/;
+	const string_num_regex = /^-?\d+(\.\d+f?)?$/;
 	function isStringNumber(string) {
 		return string_num_regex.test(string);
 	}
 
-	const special_char_regex = /[^a-z0-9\.]/;
-	const allocation_regex = /(temp|variable)\.\w+=/;
+	const logic_operator_regex = /[&|<>=]/;
+	const allocation_regex = /^(temp|variable)\.\w+=/;
 	const TRUE = 'true';
 	const FALSE = 'false';
 	const RETURN = 'return';
@@ -140,11 +150,13 @@ function Molang() {
 	function iterateString(s) {
 		//Iterates through string, returns float, string or comp;
 		if (!s) return 0;
-		if (isStringNumber(s)) return parseFloat(s);
 
+		if (s.endsWith(';')) s = s.substring(0, s.length-1);
 		while (canTrimBrackets(s)) {
 			s = s.substr(1, s.length-2);
 		}
+
+		if (isStringNumber(s)) return parseFloat(s);
 
 		let lines = splitString(s, ';', true);
 		if (lines) {
@@ -174,101 +186,103 @@ function Molang() {
 			}
 		}
 
-		if (special_char_regex.test(s)) {
-			let has_equal_sign = s.indexOf('=') !== -1;
-			let has_question_mark = s.indexOf('?') !== -1;
-	
-			//allocation
-			let match = has_equal_sign && s.length > 4 && s.match(allocation_regex);
-			if (match && s[match.index + match[0].length] !== '=') {
-				let name = match[0].substring(0, match[0].length-1);
-				let value = s.substr(match.index + match[0].length);
-				return new Allocation(name, value)
-			}
+		let has_equal_sign = s.indexOf('=') !== -1;
 
-			// Null Coalescing
-			let comp = has_question_mark && testOp(s, '??', 19);
-			if (comp) return comp;
-		
-			//ternary
-			let split = has_question_mark && splitString(s, '?');
-			if (split) {
-				let ab = splitString(split[1], ':');
-				if (ab && ab.length) {
-					return new Comp(10, split[0], ab[0], ab[1]);
-				} else {
-					return new Comp(10, split[0], split[1], 0);
-				}
+		//allocation
+		let match = has_equal_sign && s.length > 4 && s.match(allocation_regex);
+		if (match && s[match.index + match[0].length] !== '=') {
+			let name = match[0].substring(0, match[0].length-1);
+			let value = s.substr(match.index + match[0].length);
+			return new Allocation(name, value)
+		}
+
+		let has_question_mark = s.indexOf('?') !== -1;
+
+		// Null Coalescing
+		let comp = has_question_mark && testOp(s, '??', 19);
+		if (comp) return comp;
+	
+		//ternary
+		let split = has_question_mark && splitString(s, '?');
+		if (split) {
+			let ab = splitString(split[1], ':');
+			if (ab && ab.length) {
+				return new Comp(10, split[0], ab[0], ab[1]);
+			} else {
+				return new Comp(10, split[0], split[1], 0);
 			}
-		
-			//2 part operators
-			comp = (
+		}
+	
+		//2 part operators
+		let has_logic_operators = logic_operator_regex.test(s);
+		comp = (
+			has_logic_operators && (
 				testOp(s, '&&', 11) ||
 				testOp(s, '||', 12) ||
+				(has_equal_sign && testOp(s, '==', 17)) ||
+				(has_equal_sign && testOp(s, '!=', 18)) ||
 				(has_equal_sign && testOp(s, '<=', 14)) ||
 				testOp(s, '<', 13) ||
 				(has_equal_sign && testOp(s, '>=', 16)) ||
-				testOp(s, '>', 15) ||
-				(has_equal_sign && testOp(s, '==', 17)) ||
-				(has_equal_sign && testOp(s, '!=', 18)) ||
-		
-				testOp(s, '+', 1, true) ||
-				testMinus(s, '-', 2) ||
-				testOp(s, '*', 3) ||
-				testOp(s, '/', 4, true) ||
-				testNegator(s)
-			);
-			if (comp instanceof Comp) return comp;
-		
-			if (s.startsWith('math.')) {
-				if (s === 'math.pi') {
-					return Math.PI
-				}
-				let begin = s.indexOf('(');
-				let operator = s.substr(5, begin-5);
-				let inner = s.substr(begin+1, s.length-begin-2);
-				let params = splitString(inner, ',', true);
-				if (!params) params = [inner];
-		
-				switch (operator) {
-					case 'abs': 			return new Comp(100, params[0]);
-					case 'sin': 			return new Comp(101, params[0]);
-					case 'cos': 			return new Comp(102, params[0]);
-					case 'exp': 			return new Comp(103, params[0]);
-					case 'ln': 				return new Comp(104, params[0]);
-					case 'pow': 			return new Comp(105, params[0], params[1]);
-					case 'sqrt': 			return new Comp(106, params[0]);
-					case 'random': 			return new Comp(107, params[0], params[1]);
-					case 'ceil': 			return new Comp(108, params[0]);
-					case 'round': 			return new Comp(109, params[0]);
-					case 'trunc': 			return new Comp(110, params[0]);
-					case 'floor': 			return new Comp(111, params[0]);
-					case 'mod': 			return new Comp(112, params[0], params[1]);
-					case 'min': 			return new Comp(113, params[0], params[1]);
-					case 'max': 			return new Comp(114, params[0], params[1]);
-					case 'clamp': 			return new Comp(115, params[0], params[1], params[2]);
-					case 'lerp': 			return new Comp(116, params[0], params[1], params[2]);
-					case 'lerprotate': 		return new Comp(117, params[0], params[1], params[2]);
-					case 'asin': 			return new Comp(118, params[0]);
-					case 'acos': 			return new Comp(119, params[0]);
-					case 'atan': 			return new Comp(120, params[0]);
-					case 'atan2': 			return new Comp(121, params[0], params[1]);
-					case 'die_roll': 		return new Comp(122, params[0], params[1], params[2]);
-					case 'die_roll_integer':return new Comp(123, params[0], params[1], params[2]);
-					case 'hermite_blend': 	return new Comp(124, params[0]);
-					case 'random_integer': 	return new Comp(125, params[0], params[1], params[2]);
-				}
+				testOp(s, '>', 15)
+			) ||
+	
+			testOp(s, '+', 1, true) ||
+			testMinus(s, '-', 2) ||
+			testOp(s, '*', 3) ||
+			testOp(s, '/', 4, true) ||
+			testNegator(s)
+		);
+		if (comp instanceof Comp) return comp;
+	
+		if (s.startsWith('math.')) {
+			if (s === 'math.pi') {
+				return Math.PI
 			}
-			if (s.startsWith('loop(')) {
-				let inner = s.substring(5, s.length-1);
-				let params = splitString(inner, ',', true);
-				if (params) {
-					return new Loop(...params)
-				}
+			let begin = s.indexOf('(');
+			let operator = s.substr(5, begin-5);
+			let inner = s.substr(begin+1, s.length-begin-2);
+			let params = splitString(inner, ',', true);
+			if (!params) params = [inner];
+	
+			switch (operator) {
+				case 'abs': 			return new Comp(100, params[0]);
+				case 'sin': 			return new Comp(101, params[0]);
+				case 'cos': 			return new Comp(102, params[0]);
+				case 'exp': 			return new Comp(103, params[0]);
+				case 'ln': 				return new Comp(104, params[0]);
+				case 'pow': 			return new Comp(105, params[0], params[1]);
+				case 'sqrt': 			return new Comp(106, params[0]);
+				case 'random': 			return new Comp(107, params[0], params[1]);
+				case 'ceil': 			return new Comp(108, params[0]);
+				case 'round': 			return new Comp(109, params[0]);
+				case 'trunc': 			return new Comp(110, params[0]);
+				case 'floor': 			return new Comp(111, params[0]);
+				case 'mod': 			return new Comp(112, params[0], params[1]);
+				case 'min': 			return new Comp(113, params[0], params[1]);
+				case 'max': 			return new Comp(114, params[0], params[1]);
+				case 'clamp': 			return new Comp(115, params[0], params[1], params[2]);
+				case 'lerp': 			return new Comp(116, params[0], params[1], params[2]);
+				case 'lerprotate': 		return new Comp(117, params[0], params[1], params[2]);
+				case 'asin': 			return new Comp(118, params[0]);
+				case 'acos': 			return new Comp(119, params[0]);
+				case 'atan': 			return new Comp(120, params[0]);
+				case 'atan2': 			return new Comp(121, params[0], params[1]);
+				case 'die_roll': 		return new Comp(122, params[0], params[1], params[2]);
+				case 'die_roll_integer':return new Comp(123, params[0], params[1], params[2]);
+				case 'hermite_blend': 	return new Comp(124, params[0]);
+				case 'random_integer': 	return new Comp(125, params[0], params[1], params[2]);
+			}
+		}
+		if (s.startsWith('loop(')) {
+			let inner = s.substring(5, s.length-1);
+			let params = splitString(inner, ',', true);
+			if (params) {
+				return new Loop(...params)
 			}
 		}
 
-		let split = s.match(/[a-z0-9._]{2,}/g);
+		split = s.match(/[a-z0-9._]{2,}/g);
 		if (split && split.length === 1 && split[0].length >= s.length-2) {
 			return s;
 		} else if (s.includes('(') && s[s.length-1] == ')') {
@@ -461,7 +475,8 @@ function Molang() {
 				return iterateExp(T.value);
 		
 			case Allocation:
-				return temp_variables[T.name] = self.variables[T.name] = iterateExp(T.value);
+				temp_variables[T.name] = self.variables[T.name] = iterateExp(T.value);
+				return 0;
 		
 			case QueryFunction:
 
