@@ -78,6 +78,10 @@ test('Strings', `(query.item_x == 'diamond')*2 + (query.item_x == 'coal')*3`, 2,
 
 test('Loops', `v.count = 0; loop(10, {v.count = v.count + 1}); return v.count;`, 10);
 
+test('Not enough arguments', `Math.pow()`, 1);
+
+test('Broken expression', `)22 + 5 * (v.something`, 0);
+
 test('Conditional Scopes', `
     v.test = 2;
     (v.test > 1) ? {

@@ -134,7 +134,7 @@ function Molang() {
 
 	let angleFactor = () => this.use_radians ? 1 : (Math.PI/180);
 
-	const string_num_regex = /^-?\d+(\.\d+f?)?$/;
+	let string_num_regex = /^-?\d+(\.\d+f?)?$/;
 	function isStringNumber(string) {
 		return string_num_regex.test(string);
 	}
@@ -408,7 +408,8 @@ function Molang() {
 				return val() || 0;
 			}
 			return val || 0;
-	
+		} else if (T === undefined) {
+			return 0;
 		}
 		switch (T.constructor) {
 			case Comp:

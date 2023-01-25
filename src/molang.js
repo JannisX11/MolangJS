@@ -347,7 +347,8 @@ function Molang() {
 				return val() || 0;
 			}
 			return val || 0;
-	
+		} else if (T === undefined) {
+			return 0;
 		}
 		switch (T.constructor) {
 			case Comp:
