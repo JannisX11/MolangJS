@@ -63,7 +63,7 @@ function Molang() {
 	}
 	function Allocation(name, value) {
 		this.value = iterateString(value);
-		this.name = name;
+		this.name = toVariableName(name);
 	}
 	function ReturnStatement(value) {
 		this.value = iterateString(value);
@@ -78,8 +78,23 @@ function Molang() {
 		return string_num_regex.test(string);
 	}
 
+	function toVariableName(input) {
+		if (input[1] === POINT) {
+			let char = input[0];
+			switch (char) {
+				case 'q': return 'query' + input.substring(1);
+				case 'v': return 'variable' + input.substring(1);
+				case 't': return 'temp' + input.substring(1);
+				case 'c': return 'context' + input.substring(1);
+				default:  return input;
+			}
+		} else {
+			return input;
+		}
+	}
+
 	const logic_operator_regex = /[&|<>=]/;
-	const allocation_regex = /^(temp|variable)\.\w+=/;
+	const allocation_regex = /^(temp|variable|t|v)\.\w+=/;
 	const TRUE = 'true';
 	const FALSE = 'false';
 	const RETURN = 'return';
@@ -97,7 +112,7 @@ function Molang() {
 
 		if (isStringNumber(s)) return parseFloat(s);
 
-		let lines = splitString(s, ';', true);
+		let lines = splitStringMultiple(s, ';');
 		if (lines) {
 			return new Scope(lines);
 		}
@@ -113,16 +128,6 @@ function Molang() {
 			case FALSE: return 0;
 			case BREAK: return new BreakStatement();
 			case CONTINUE: return new ContinueStatement();
-		}
-
-		if (s.substring(1, 2) === POINT) {
-			let char = s.substring(0, 1);
-			switch (char) {
-				case 'q': s = 'query' + s.substring(1); break;
-				case 'v': s = 'variable' + s.substring(1); break;
-				case 't': s = 'temp' + s.substring(1); break;
-				case 'c': s = 'context' + s.substring(1); break;
-			}
 		}
 
 		let has_equal_sign = s.indexOf('=') !== -1;
@@ -181,7 +186,7 @@ function Molang() {
 			let begin = s.indexOf('(');
 			let operator = s.substr(5, begin-5);
 			let inner = s.substr(begin+1, s.length-begin-2)
-			let params = splitString(inner, ',', true);
+			let params = splitStringMultiple(inner, ',');
 			if (!params) params = [inner];
 	
 			switch (operator) {
@@ -210,12 +215,12 @@ function Molang() {
 				case 'die_roll': 		return new Comp(122, params[0], params[1], params[2]);
 				case 'die_roll_integer':return new Comp(123, params[0], params[1], params[2]);
 				case 'hermite_blend': 	return new Comp(124, params[0]);
-				case 'random_integer': 	return new Comp(125, params[0], params[1], params[2]);
+				case 'random_integer': 	return new Comp(125, params[0], params[1]);
 			}
 		}
 		if (s.startsWith('loop(')) {
 			let inner = s.substring(5, s.length-1);
-			let params = splitString(inner, ',', true);
+			let params = splitStringMultiple(inner, ',');
 			if (params) {
 				return new Loop(...params)
 			}
@@ -223,12 +228,12 @@ function Molang() {
 
 		split = s.match(/[a-z0-9._]{2,}/g)
 		if (split && split.length === 1 && split[0].length >= s.length-2) {
-			return s;
+			return toVariableName(s);
 		} else if (s.includes('(') && s[s.length-1] == ')') {
 			let begin = s.search(/\(/);
-			let query_name = s.substr(0, begin);
+			let query_name = toVariableName(s.substr(0, begin));
 			let inner = s.substr(begin+1, s.length-begin-2)
-			let params = splitString(inner, ',', true);
+			let params = splitStringMultiple(inner, ',');
 			if (!params) params = [inner];
 			
 			return new QueryFunction(query_name, params);
@@ -236,7 +241,11 @@ function Molang() {
 		return 0;
 	}
 	function canTrimBrackets(s) {
-		if ((s.startsWith(BracketOpen) && s.endsWith(BracketClose)) || (s.startsWith(CurlyBracketOpen) && s.endsWith(CurlyBracketClose))) {
+		let regular_brackets = s.startsWith(BracketOpen) && s.endsWith(BracketClose);
+		if (
+			regular_brackets || (s.startsWith(CurlyBracketOpen) && s.endsWith(CurlyBracketClose))
+		) {
+			if (s.indexOf(regular_brackets ? BracketClose : CurlyBracketClose) === s.length-1) return true;
 			let level = 0;
 			for (let i = 0; i < s.length-1; i++) {
 				switch (s[i]) {
@@ -246,6 +255,8 @@ function Molang() {
 				if (level == 0) return false;
 			}
 			return true;
+		} else {
+			return false;
 		}
 	}
 	function testOp(s, char, operator, inverse) {
@@ -276,7 +287,25 @@ function Molang() {
 	const CurlyBracketOpen = '{';
 	const CurlyBracketClose = '}';
 	const Minus = '-';
-	function splitString(s, char, multiple = false) {
+	function splitString(s, char) {
+		if (s.indexOf(char) === -1) return;
+		let level = 0;
+		for (let i = 0; i < s.length; i++) {
+			switch (s[i]) {
+				case BracketOpen: level++; break;
+				case BracketClose: level--; break;
+				default:
+					if (level === 0 && char[0] === s[i] && (char.length === 1 || char === s.substr(i, char.length))) {
+						return [
+							s.substr(0, i),
+							s.substr(i+char.length)
+						];
+					}
+					break;
+			}
+		}
+	}
+	function splitStringMultiple(s, char) {
 		if (s.indexOf(char) === -1) return;
 		let level = 0;
 		let pieces;
@@ -292,7 +321,7 @@ function Molang() {
 						if (!pieces) pieces = [];
 						pieces.push(piece);
 						last_split = i + char.length;
-						if (!multiple || s.substring(last_split).indexOf(char) === -1) break loop;
+						if (s.substring(last_split).indexOf(char) === -1) break loop;
 					}
 			}
 		}
@@ -428,10 +457,10 @@ function Molang() {
 					case 'query.approx_eq': return MathUtil.approxEq(...args);
 				}
 				if (typeof temp_variables[T.query] == 'function') {
-					return temp_variables[T.query](...args);
+					return temp_variables[T.query](...args) || 0;
 				}
 				if (typeof self.variableHandler === 'function') {
-					return self.variableHandler(T.query, temp_variables, args);
+					return self.variableHandler(T.query, temp_variables, args) || 0;
 				}
 				return 0;
 		
@@ -492,15 +521,10 @@ function Molang() {
 		loop_status = 0;
 		return end_result;
 	}
-	
-	function parseInput(input) {
-		input = input.toLowerCase().replace(/\s/g, '');
-		return iterateString(input);
-	}
 
 	this.parse = (input, variables) => {
 		if (typeof input === 'number') {
-			return isNaN(input) ? 0 : input
+			return input || 0;
 		}
 		if (typeof input !== 'string' || input.length === 0) return 0;
 		if (input.length < 9 && isStringNumber(input)) {
@@ -509,12 +533,12 @@ function Molang() {
 		
 		let expression = this.cache_enabled && cached[input];
 		if (!expression) {
-			expression = parseInput(input);
+			expression = iterateString(input.toLowerCase().replace(/\s/g, ''));
 			if (this.cache_enabled) {
 				addToCache(input, expression);
 			}
 		}
-		return calculate(expression, variables);
+		return calculate(expression, variables) || 0;
 	}
 	this.resetVariables = () => {
 		self.variables = {};

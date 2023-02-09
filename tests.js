@@ -82,6 +82,8 @@ test('Not enough arguments', `Math.pow()`, 1);
 
 test('Broken expression', `)22 + 5 * (v.something`, 0);
 
+test('Undefined things', 'null + non_existant_function() + query.not_a_query(1, 2) + 40', 40);
+
 test('Conditional Scopes', `
     v.test = 2;
     (v.test > 1) ? {
