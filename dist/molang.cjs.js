@@ -79,7 +79,6 @@ function Molang() {
 
 	this.variableHandler = null;
 
-	let temp_variables = {};
 	let found_unassigned_variable = false;
 	let loop_status = 0;
 
@@ -414,23 +413,23 @@ function Molang() {
 			i--;
 		}
 	}
-	function compareValues(a, b) {
-		if (!(typeof a === 'string' && a[0] == `'`)) a = iterateExp(a, true);
-		if (!(typeof b === 'string' && b[0] == `'`)) b = iterateExp(b, true);
+	function compareValues(a, b, context) {
+		if (!(typeof a === 'string' && a[0] == `'`)) a = iterateExp(a, context, true);
+		if (!(typeof b === 'string' && b[0] == `'`)) b = iterateExp(b, context, true);
 		return a === b;
 	}
-	function iterateExp(T, allow_strings) {
+	function iterateExp(T, context, allow_strings) {
 		if (typeof T === 'number') {
 			return T;
 		} else if (typeof T === 'string') {
-			let val = temp_variables[T];
+			let val = context[T];
 			if (val === undefined && typeof self.variableHandler === 'function') {
-				val = self.variableHandler(T, temp_variables);
+				val = self.variableHandler(T, context);
 			}
 			if (typeof val === 'number') {
 				return val;
 			} else if (typeof val === 'string' && !allow_strings) {
-				return self.parse(val, temp_variables) || 0;
+				return self.parse(val, context) || 0;
 			} else if (val === undefined) {
 				found_unassigned_variable = true;
 			} else if (typeof val === 'function') {
@@ -445,83 +444,83 @@ function Molang() {
 
 				switch (T.operator) {
 					//Basic
-					case 1:		return iterateExp(T.a) + iterateExp(T.b);
-					case 2:		return iterateExp(T.a) - iterateExp(T.b);
-					case 3:		return iterateExp(T.a) * iterateExp(T.b);
-					case 4:		return iterateExp(T.a) / iterateExp(T.b);
-					case 5:		return iterateExp(T.a) == 0 ? 1 : 0;
+					case 1:		return iterateExp(T.a, context) + iterateExp(T.b, context);
+					case 2:		return iterateExp(T.a, context) - iterateExp(T.b, context);
+					case 3:		return iterateExp(T.a, context) * iterateExp(T.b, context);
+					case 4:		return iterateExp(T.a, context) / iterateExp(T.b, context);
+					case 5:		return iterateExp(T.a, context) == 0 ? 1 : 0;
 
 					//Logical
-					case 10:	return iterateExp(T.a) ?  iterateExp(T.b) : iterateExp(T.c);
-					case 11:	return iterateExp(T.a) && iterateExp(T.b) ? 1 : 0;
-					case 12:	return iterateExp(T.a) || iterateExp(T.b) ? 1 : 0;
-					case 13:	return iterateExp(T.a) <  iterateExp(T.b) ? 1 : 0;
-					case 14:	return iterateExp(T.a) <= iterateExp(T.b) ? 1 : 0;
-					case 15:	return iterateExp(T.a) >  iterateExp(T.b) ? 1 : 0;
-					case 16:	return iterateExp(T.a) >= iterateExp(T.b) ? 1 : 0;
-					case 17:	return compareValues(T.a, T.b) ? 1 : 0;
-					case 18:	return compareValues(T.a, T.b) ? 0 : 1;
+					case 10:	return iterateExp(T.a, context) ?  iterateExp(T.b, context) : iterateExp(T.c, context);
+					case 11:	return iterateExp(T.a, context) && iterateExp(T.b, context) ? 1 : 0;
+					case 12:	return iterateExp(T.a, context) || iterateExp(T.b, context) ? 1 : 0;
+					case 13:	return iterateExp(T.a, context) <  iterateExp(T.b, context) ? 1 : 0;
+					case 14:	return iterateExp(T.a, context) <= iterateExp(T.b, context) ? 1 : 0;
+					case 15:	return iterateExp(T.a, context) >  iterateExp(T.b, context) ? 1 : 0;
+					case 16:	return iterateExp(T.a, context) >= iterateExp(T.b, context) ? 1 : 0;
+					case 17:	return compareValues(T.a, T.b, context) ? 1 : 0;
+					case 18:	return compareValues(T.a, T.b, context) ? 0 : 1;
 					case 19:	found_unassigned_variable = false;
-								let variable = iterateExp(T.a);
-								return found_unassigned_variable ? iterateExp(T.b) : variable;
+								let variable = iterateExp(T.a, context);
+								return found_unassigned_variable ? iterateExp(T.b, context) : variable;
 
 					//Math
-					case 100:	return Math.abs(iterateExp(T.a));
-					case 101:	return Math.sin(iterateExp(T.a) * angleFactor());
-					case 102:	return Math.cos(iterateExp(T.a) * angleFactor());
-					case 103:	return Math.exp(iterateExp(T.a));
-					case 104:	return Math.log(iterateExp(T.a));
-					case 105:	return Math.pow(iterateExp(T.a), iterateExp(T.b));
-					case 106:	return Math.sqrt(iterateExp(T.a));
-					case 107:	return MathUtil.random(iterateExp(T.a), iterateExp(T.b));
-					case 108:	return Math.ceil(iterateExp(T.a));
-					case 109:	return Math.round(iterateExp(T.a));
-					case 110:	return Math.trunc(iterateExp(T.a));
-					case 111:	return Math.floor(iterateExp(T.a));
-					case 112:	return iterateExp(T.a) % iterateExp(T.b);
-					case 113:	return Math.min(iterateExp(T.a), iterateExp(T.b));
-					case 114:	return Math.max(iterateExp(T.a), iterateExp(T.b));
-					case 115:	return MathUtil.clamp(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					case 100:	return Math.abs(iterateExp(T.a, context));
+					case 101:	return Math.sin(iterateExp(T.a, context) * angleFactor());
+					case 102:	return Math.cos(iterateExp(T.a, context) * angleFactor());
+					case 103:	return Math.exp(iterateExp(T.a, context));
+					case 104:	return Math.log(iterateExp(T.a, context));
+					case 105:	return iterateExp(T.a, context) ** iterateExp(T.b, context);
+					case 106:	return Math.sqrt(iterateExp(T.a, context));
+					case 107:	return MathUtil.random(iterateExp(T.a, context), iterateExp(T.b, context));
+					case 108:	return Math.ceil(iterateExp(T.a, context));
+					case 109:	return Math.round(iterateExp(T.a, context));
+					case 110:	return Math.trunc(iterateExp(T.a, context));
+					case 111:	return Math.floor(iterateExp(T.a, context));
+					case 112:	return iterateExp(T.a, context) % iterateExp(T.b, context);
+					case 113:	return Math.min(iterateExp(T.a, context), iterateExp(T.b, context));
+					case 114:	return Math.max(iterateExp(T.a, context), iterateExp(T.b, context));
+					case 115:	return MathUtil.clamp(iterateExp(T.a, context), iterateExp(T.b, context), iterateExp(T.c, context));
 					//	Lerp
-					case 116:	return MathUtil.lerp(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
-					case 117:	return MathUtil.lerpRotate(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					case 116:	return MathUtil.lerp(iterateExp(T.a, context), iterateExp(T.b, context), iterateExp(T.c, context));
+					case 117:	return MathUtil.lerpRotate(iterateExp(T.a, context), iterateExp(T.b, context), iterateExp(T.c, context));
 					// Inverse Trigonometry
-					case 118:	return Math.asin(iterateExp(T.a)) / angleFactor();
-					case 119:	return Math.acos(iterateExp(T.a)) / angleFactor();
-					case 120:	return Math.atan(iterateExp(T.a)) / angleFactor();
-					case 121:	return Math.atan2(iterateExp(T.a), iterateExp(T.b)) / angleFactor();
+					case 118:	return Math.asin(iterateExp(T.a, context)) / angleFactor();
+					case 119:	return Math.acos(iterateExp(T.a, context)) / angleFactor();
+					case 120:	return Math.atan(iterateExp(T.a, context)) / angleFactor();
+					case 121:	return Math.atan2(iterateExp(T.a, context), iterateExp(T.b, context)) / angleFactor();
 					// Misc
-					case 122:	return MathUtil.dieRoll(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
-					case 123:	return MathUtil.dieRollInt(iterateExp(T.a), iterateExp(T.b), iterateExp(T.c));
+					case 122:	return MathUtil.dieRoll(iterateExp(T.a, context), iterateExp(T.b, context), iterateExp(T.c, context));
+					case 123:	return MathUtil.dieRollInt(iterateExp(T.a, context), iterateExp(T.b, context), iterateExp(T.c, context));
 					case 124:
-						let t = iterateExp(T.a);
-						return 3*Math.pow(t, 2) - 2*Math.pow(t, 3);
-					case 125:	return MathUtil.randomInt(iterateExp(T.a), iterateExp(T.b));
+						let t = iterateExp(T.a, context);
+						return 3*(t**2) - 2*(t**3);
+					case 125:	return MathUtil.randomInt(iterateExp(T.a, context), iterateExp(T.b, context));
 				}
 				break;
 
 			case ReturnStatement:
 				loop_status = 1;
-				return iterateExp(T.value);
+				return iterateExp(T.value, context);
 		
 			case Allocation:
-				temp_variables[T.name] = self.variables[T.name] = iterateExp(T.value);
+				context[T.name] = self.variables[T.name] = iterateExp(T.value, context);
 				return 0;
 		
 			case QueryFunction:
 
-				let args = T.args.map(arg => iterateExp(arg));
+				let args = T.args.map(arg => iterateExp(arg, context));
 				switch (T.query) {
 					case 'query.in_range': 	return MathUtil.inRange(...args);
 					case 'query.all': 		return MathUtil.all(...args);
 					case 'query.any': 		return MathUtil.any(...args);
 					case 'query.approx_eq': return MathUtil.approxEq(...args);
 				}
-				if (typeof temp_variables[T.query] == 'function') {
-					return temp_variables[T.query](...args) || 0;
+				if (typeof context[T.query] == 'function') {
+					return context[T.query](...args) || 0;
 				}
 				if (typeof self.variableHandler === 'function') {
-					return self.variableHandler(T.query, temp_variables, args) || 0;
+					return self.variableHandler(T.query, context, args) || 0;
 				}
 				return 0;
 		
@@ -529,7 +528,7 @@ function Molang() {
 				loop_status = 0;
 				let return_value = 0;
 				for (let line of T.lines) {
-					return_value = iterateExp(line);
+					return_value = iterateExp(line, context);
 					if (loop_status > 0) {
 						break;
 					}
@@ -538,9 +537,9 @@ function Molang() {
 
 			case Loop:
 				let return_value2 = 0;
-				let iterations = MathUtil.clamp(iterateExp(T.iterations), 0, 1024);
+				let iterations = MathUtil.clamp(iterateExp(T.iterations, context), 0, 1024);
 				for (let i = 0; i < iterations; i++) {
-					let result = iterateExp(T.body);
+					let result = iterateExp(T.body, context);
 					if (loop_status === 2) {
 						loop_status = 0;
 						break;
@@ -566,19 +565,19 @@ function Molang() {
 	}
 
 	function calculate(expression, variables) {
+		let context = {};
 		for (let key in self.global_variables) {
-			temp_variables[key] = self.global_variables[key];
+			context[key] = self.global_variables[key];
 		}
 		for (let key in self.variables) {
-			temp_variables[key] = self.variables[key];
+			context[key] = self.variables[key];
 		}
 		if (variables) {
 			for (let key in variables) {
-				temp_variables[key] = variables[key];
+				context[key] = variables[key];
 			}
 		}
-		let end_result = iterateExp(expression);
-		temp_variables = {};
+		let end_result = iterateExp(expression, context);
 		loop_status = 0;
 		return end_result;
 	}
