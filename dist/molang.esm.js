@@ -350,8 +350,8 @@ function Molang() {
 		let level = 0;
 		for (let i = 0; i < s.length; i++) {
 			switch (s[i]) {
-				case BracketOpen: level++; break;
-				case BracketClose: level--; break;
+				case BracketOpen: case CurlyBracketOpen: level++; break;
+				case BracketClose: case CurlyBracketClose: level--; break;
 				default:
 					if (level === 0 && char[0] === s[i] && (char.length === 1 || char === s.substr(i, char.length))) {
 						return [

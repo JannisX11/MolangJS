@@ -103,6 +103,18 @@ test('Nesting & Break', `
     return v.count;
 `, 5);
 
+test('Nested scopes and ternary', `
+    t.r = 10;
+    false ? {
+        true ? {
+            t.r = 1;
+        } : {
+            t.r = 0.5;
+        };
+    };
+    return t.r;
+`, 10);
+
 test('Continue', `
     v.count = 0;
     true ? {
