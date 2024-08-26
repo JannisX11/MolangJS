@@ -38,6 +38,8 @@ test('Float type notation', '10 * -0.2f', -2)
 
 test('Order of division', '12 / 2 / 2', 3)
 
+test('Subtracting negatives', '-1 - -2', 1)
+
 test('Binary', 'true ? 10', 10)
 
 test('Ternary', 'false ? 5 : 10', 10)

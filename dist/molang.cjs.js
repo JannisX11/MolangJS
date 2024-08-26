@@ -401,7 +401,7 @@ function Molang() {
 				default:
 					if (level === 0 && char[0] === s[i] &&
 						(char.length === 1 || char === s.substr(i, char.length)) &&
-						(char !== Minus || '+*/<>=|&?:'.includes(s[i-1]) === false)
+						(char !== Minus || '+-*/<>=|&?:'.includes(s[i-1]) === false)
 					) {
 						return [
 							s.substr(0, i),
