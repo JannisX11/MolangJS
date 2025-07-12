@@ -84,6 +84,8 @@ test('Not enough arguments', `Math.pow()`, 1);
 
 test('Broken expression', `)22 + 5 * (v.something`, 0);
 
+test('Query function string argument', `q.property('name:space')`, 6, {"query.property": (arg1) => arg1 == 'name:space' ? 6 : 0});
+
 test('Undefined things', 'null + non_existant_function() + query.not_a_query(1, 2) + 40', 40);
 
 test('Conditional Scopes', `

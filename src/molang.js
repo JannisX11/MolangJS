@@ -58,7 +58,12 @@ function Molang() {
 	}
 	function QueryFunction(query, args) {
 		this.query = query;
-		this.args = args.map(string => iterateString(string));
+		this.args = args.map(string => {
+			if (string.startsWith("'") && string.endsWith("'")) {
+				return string;
+			}
+			return iterateString(string)
+		});
 	}
 	function Allocation(name, value) {
 		this.value = iterateString(value);
@@ -448,7 +453,13 @@ function Molang() {
 		
 			case QueryFunction:
 
-				let args = T.args.map(arg => iterateExp(arg, context));
+				let args = T.args.map(arg => {
+					if (typeof arg == 'string' && arg.startsWith("'") && arg.endsWith("'")) {
+						return arg.substring(1, arg.length-1);
+					}
+					return iterateExp(arg, context, true);
+				});
+
 				switch (T.query) {
 					case 'query.in_range': 	return MathUtil.inRange(...args);
 					case 'query.all': 		return MathUtil.all(...args);
