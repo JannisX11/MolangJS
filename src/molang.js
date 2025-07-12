@@ -220,6 +220,7 @@ function Molang() {
 				case 'die_roll_integer':return new Comp(123, params[0], params[1], params[2]);
 				case 'hermite_blend': 	return new Comp(124, params[0]);
 				case 'random_integer': 	return new Comp(125, params[0], params[1]);
+				case 'min_angle': 		return new Comp(126, params[0]);
 			}
 		}
 		if (s.startsWith('loop(')) {
@@ -440,6 +441,7 @@ function Molang() {
 						let t = iterateExp(T.a, context);
 						return 3*(t**2) - 2*(t**3);
 					case 125:	return MathUtil.randomInt(iterateExp(T.a, context), iterateExp(T.b, context));
+					case 126:	return MathUtil.minAngle(iterateExp(T.a, context));
 				}
 				break;
 

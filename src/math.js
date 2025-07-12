@@ -45,6 +45,10 @@ export default {
 			return a + lerp * diff;
 		}
 	},
+	minAngle(value) {
+		let floor = Math.max(4, 4 + Math.round(value/-360)) * 2 + 1;
+		return ((value + 180*floor) % 360) - 180;
+	},
 	inRange(value, min, max) {
 		return (value <= max && value >= min) ? 1 : 0;
 	},

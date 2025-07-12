@@ -45,6 +45,10 @@ var MathUtil = {
 			return a + lerp * diff;
 		}
 	},
+	minAngle(value) {
+		let floor = Math.max(4, 4 + Math.round(value/-360)) * 2 + 1;
+		return ((value + 180*floor) % 360) - 180;
+	},
 	inRange(value, min, max) {
 		return (value <= max && value >= min) ? 1 : 0;
 	},
@@ -117,7 +121,12 @@ function Molang() {
 	}
 	function QueryFunction(query, args) {
 		this.query = query;
-		this.args = args.map(string => iterateString(string));
+		this.args = args.map(string => {
+			if (string.startsWith("'") && string.endsWith("'")) {
+				return string;
+			}
+			return iterateString(string)
+		});
 	}
 	function Allocation(name, value) {
 		this.value = iterateString(value);
@@ -274,6 +283,7 @@ function Molang() {
 				case 'die_roll_integer':return new Comp(123, params[0], params[1], params[2]);
 				case 'hermite_blend': 	return new Comp(124, params[0]);
 				case 'random_integer': 	return new Comp(125, params[0], params[1]);
+				case 'min_angle': 		return new Comp(126, params[0]);
 			}
 		}
 		if (s.startsWith('loop(')) {
@@ -494,6 +504,7 @@ function Molang() {
 						let t = iterateExp(T.a, context);
 						return 3*(t**2) - 2*(t**3);
 					case 125:	return MathUtil.randomInt(iterateExp(T.a, context), iterateExp(T.b, context));
+					case 126:	return MathUtil.minAngle(iterateExp(T.a, context));
 				}
 				break;
 
@@ -507,7 +518,13 @@ function Molang() {
 		
 			case QueryFunction:
 
-				let args = T.args.map(arg => iterateExp(arg, context));
+				let args = T.args.map(arg => {
+					if (typeof arg == 'string' && arg.startsWith("'") && arg.endsWith("'")) {
+						return arg.substring(1, arg.length-1);
+					}
+					return iterateExp(arg, context, true);
+				});
+
 				switch (T.query) {
 					case 'query.in_range': 	return MathUtil.inRange(...args);
 					case 'query.all': 		return MathUtil.all(...args);

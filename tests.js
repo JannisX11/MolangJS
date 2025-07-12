@@ -62,6 +62,8 @@ test('Variable Check', 'variable.a == 3', 1, {'variable.a': 3})
 
 test('Lerprotate', 'Math.lerprotate(10, 380, 0.5) + Math.lerprotate(50, -10, 0.25)', 20)
 
+test('Min Angle', 'math.min_angle(360*-20 + 20) + math.min_angle(359)', 19)
+
 test('Inverse Trigonometry', 'Math.round(Math.acos(-1) + Math.atan2(2, 4))', 207)
 
 test('Null Coalescing', '(variable.non_existent ?? 3) + (variable.existent ?? 9)', 5, {'variable.existent': 2})
