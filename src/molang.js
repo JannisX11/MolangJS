@@ -221,6 +221,8 @@ function Molang() {
 				case 'hermite_blend': 	return new Comp(124, params[0]);
 				case 'random_integer': 	return new Comp(125, params[0], params[1]);
 				case 'min_angle': 		return new Comp(126, params[0]);
+				case 'sign': 			return new Comp(127, params[0]);
+				case 'copy_sign': 		return new Comp(128, params[0], params[1]);
 			}
 		}
 		if (s.startsWith('loop(')) {
@@ -442,6 +444,8 @@ function Molang() {
 						return 3*(t**2) - 2*(t**3);
 					case 125:	return MathUtil.randomInt(iterateExp(T.a, context), iterateExp(T.b, context));
 					case 126:	return MathUtil.minAngle(iterateExp(T.a, context));
+					case 127:	return Math.sign(iterateExp(T.a, context));
+					case 128:	return Math.abs(iterateExp(T.a, context)) * Math.sign(iterateExp(T.b, context));
 				}
 				break;
 

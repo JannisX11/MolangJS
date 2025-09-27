@@ -48,6 +48,8 @@ test('Greater or equal', '3 >= 4', 0)
 
 test('Negation', '!variable.value ? 100 : (10 + !variable.nothing)', 11, {'variable.value': 2, 'variable.nothing': 0})
 
+test('Sign', 'Math.copy_sign(-5, 30) + Math.sign(-100)', 4)
+
 test('Multiline', 'temp.test = 33; return temp.test * 2', 66)
 
 test('Return', 'temp.test = 4; return temp.test; return 5;', 4)
