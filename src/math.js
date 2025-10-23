@@ -33,6 +33,9 @@ export default {
 	lerp(start, end, lerp) {
 		return start + (end - start) * lerp;
 	},
+	inverseLerp(start, end, value) {
+		return (value-start) / (end-start)
+	},
 	lerpRotate(start, end, lerp) {
 		let a = radify(start)
 		let b = radify(end)

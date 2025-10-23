@@ -3,7 +3,8 @@
  * License: MIT
  */
 
-import MathUtil from './math'
+import MathUtil from './math.js'
+import { Easings } from './easing.js';
 
 
 
@@ -223,6 +224,37 @@ function Molang() {
 				case 'min_angle': 		return new Comp(126, params[0]);
 				case 'sign': 			return new Comp(127, params[0]);
 				case 'copy_sign': 		return new Comp(128, params[0], params[1]);
+				case 'inverse_lerp': 	return new Comp(129, params[0], params[1], params[2]);
+				case 'ease_in_quad': 		return new Comp(200, params[0], params[1], params[2]);
+				case 'ease_out_quad': 		return new Comp(201, params[0], params[1], params[2]);
+				case 'ease_in_out_quad': 	return new Comp(202, params[0], params[1], params[2]);
+				case 'ease_in_cubic': 		return new Comp(203, params[0], params[1], params[2]);
+				case 'ease_out_cubic': 		return new Comp(204, params[0], params[1], params[2]);
+				case 'ease_in_out_cubic': 	return new Comp(205, params[0], params[1], params[2]);
+				case 'ease_in_quart': 		return new Comp(206, params[0], params[1], params[2]);
+				case 'ease_out_quart': 		return new Comp(207, params[0], params[1], params[2]);
+				case 'ease_in_out_quart': 	return new Comp(208, params[0], params[1], params[2]);
+				case 'ease_in_quint': 		return new Comp(209, params[0], params[1], params[2]);
+				case 'ease_out_quint': 		return new Comp(210, params[0], params[1], params[2]);
+				case 'ease_in_out_quint': 	return new Comp(211, params[0], params[1], params[2]);
+				case 'ease_in_sine': 		return new Comp(212, params[0], params[1], params[2]);
+				case 'ease_out_sine': 		return new Comp(213, params[0], params[1], params[2]);
+				case 'ease_in_out_sine': 	return new Comp(214, params[0], params[1], params[2]);
+				case 'ease_in_expo': 		return new Comp(215, params[0], params[1], params[2]);
+				case 'ease_out_expo': 		return new Comp(216, params[0], params[1], params[2]);
+				case 'ease_in_out_expo': 	return new Comp(217, params[0], params[1], params[2]);
+				case 'ease_in_circ': 		return new Comp(218, params[0], params[1], params[2]);
+				case 'ease_out_circ': 		return new Comp(219, params[0], params[1], params[2]);
+				case 'ease_in_out_circ': 	return new Comp(220, params[0], params[1], params[2]);
+				case 'ease_in_bounce': 		return new Comp(221, params[0], params[1], params[2]);
+				case 'ease_out_bounce': 	return new Comp(222, params[0], params[1], params[2]);
+				case 'ease_in_out_bounce': 	return new Comp(223, params[0], params[1], params[2]);
+				case 'ease_in_back': 		return new Comp(224, params[0], params[1], params[2]);
+				case 'ease_out_back': 		return new Comp(225, params[0], params[1], params[2]);
+				case 'ease_in_out_back': 	return new Comp(226, params[0], params[1], params[2]);
+				case 'ease_in_elastic': 	return new Comp(227, params[0], params[1], params[2]);
+				case 'ease_out_elastic': 	return new Comp(228, params[0], params[1], params[2]);
+				case 'ease_in_out_elastic': return new Comp(229, params[0], params[1], params[2]);
 			}
 		}
 		if (s.startsWith('loop(')) {
@@ -446,6 +478,46 @@ function Molang() {
 					case 126:	return MathUtil.minAngle(iterateExp(T.a, context));
 					case 127:	return Math.sign(iterateExp(T.a, context));
 					case 128:	return Math.abs(iterateExp(T.a, context)) * Math.sign(iterateExp(T.b, context));
+					case 129:	return MathUtil.inverseLerp(iterateExp(T.a, context), iterateExp(T.b, context), iterateExp(T.c, context));
+				}
+				if (T.operator >= 200) {
+					let start = iterateExp(T.a, context);
+					let end = iterateExp(T.b, context);
+					let value = iterateExp(T.c, context);
+					let result = value;
+					switch (T.operator) {
+						case 200: result = Easings.easeInQuad(value); break;
+						case 201: result = Easings.easeOutQuad(value); break;
+						case 202: result = Easings.easeInOutQuad(value); break;
+						case 203: result = Easings.easeInCubic(value); break;
+						case 204: result = Easings.easeOutCubic(value); break;
+						case 205: result = Easings.easeInOutCubic(value); break;
+						case 206: result = Easings.easeInQuart(value); break;
+						case 207: result = Easings.easeOutQuart(value); break;
+						case 208: result = Easings.easeInOutQuart(value); break;
+						case 209: result = Easings.easeInQuint(value); break;
+						case 210: result = Easings.easeOutQuint(value); break;
+						case 211: result = Easings.easeInOutQuint(value); break;
+						case 212: result = Easings.easeInSine(value); break;
+						case 213: result = Easings.easeOutSine(value); break;
+						case 214: result = Easings.easeInOutSine(value); break;
+						case 215: result = Easings.easeInExpo(value); break;
+						case 216: result = Easings.easeOutExpo(value); break;
+						case 217: result = Easings.easeInOutExpo(value); break;
+						case 218: result = Easings.easeInCirc(value); break;
+						case 219: result = Easings.easeOutCirc(value); break;
+						case 220: result = Easings.easeInOutCirc(value); break;
+						case 221: result = Easings.easeInOutBounce(value); break;
+						case 222: result = Easings.easeOutBounce(value); break;
+						case 223: result = Easings.easeInOutBounce(value); break;
+						case 224: result = Easings.easeInBack(value); break;
+						case 225: result = Easings.easeOutBack(value); break;
+						case 226: result = Easings.easeInOutBack(value); break;
+						case 227: result = Easings.easeInElastic(value); break;
+						case 228: result = Easings.easeOutElastic(value); break;
+						case 229: result = Easings.easeInOutElastic(value); break;
+					}
+					return MathUtil.lerp(start, end, result);
 				}
 				break;
 
