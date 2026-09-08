@@ -426,7 +426,8 @@ function Molang() {
 					case 1:		return iterateExp(T.a, context) + iterateExp(T.b, context);
 					case 2:		return iterateExp(T.a, context) - iterateExp(T.b, context);
 					case 3:		return iterateExp(T.a, context) * iterateExp(T.b, context);
-					case 4:		return iterateExp(T.a, context) / iterateExp(T.b, context);
+					case 4:		let divisor = iterateExp(T.b, context);
+								return divisor == 0 ? 0 : iterateExp(T.a, context) / divisor;
 					case 5:		return iterateExp(T.a, context) == 0 ? 1 : 0;
 
 					//Logical
