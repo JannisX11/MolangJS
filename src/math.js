@@ -2,8 +2,9 @@ const radify = n => (((n + 180) % 360) +180) % 360;
 
 export default {
 	clamp(number, min, max) {
+		if (isNaN(number)) return 0;
 		if (number > max) number = max;
-		if (number < min || isNaN(number)) number = min;
+		if (number < min) number = min;
 		return number;
 	},
 	random(a, b) {

@@ -40,6 +40,18 @@ test('Order of division', '12 / 2 / 2', 3)
 
 test('Subtracting negatives', '-1 - -2', 1)
 
+test('Divide zero by zero', '0 / 0', 0)
+
+test('Divide by zero', '1 / 0', 0)
+
+test('Divide by zero in expression', '5 / 0 + 1', 1)
+
+test('Clamp zero divided by zero', 'math.clamp(0 / 0, -5, 5)', 0)
+
+test('Clamp divided by zero', 'math.clamp(1 / 0, -5, 5)', 0)
+
+test('Clamp divided by unset variable', 'math.clamp((math.cos(0) * math.min(q.speed, 0.6) / v.unset) * 25, -12.5, 12.5)', 0, {'query.speed': 0})
+
 test('Binary', 'true ? 10', 10)
 
 test('Ternary', 'false ? 5 : 10', 10)
@@ -150,3 +162,4 @@ test('Early Return', `
 
 MolangParser.resetVariables();
 test('Reset Variables', 'variable.b * 2', 0)
+
